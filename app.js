@@ -444,20 +444,75 @@ function scanDone(){
   <div class="actions"><button class="btn btn-primary" data-close data-toast="Added Aviva home insurance">${ic("plus")}Add to Agreed</button></div></div>`;
 }
 
-const PRESETS = [
- {name:"Netflix",price:18.99,cat:"Streaming",bg:"linear-gradient(145deg,#1c1c1c,#000)",fg:"#E50914",mono:"N"},
- {name:"Spotify",price:11.99,cat:"Music",bg:"linear-gradient(145deg,#1ed760,#0f7a37)",mono:"S"},
- {name:"Apple TV+",price:12.99,cat:"Streaming",bg:"linear-gradient(145deg,#3a3a3c,#000)",mono:"@play"},
- {name:"Disney+",price:11.99,cat:"Streaming",bg:"linear-gradient(145deg,#0A2FB4,#061a5e)",mono:"D+"},
- {name:"ChatGPT Plus",price:28.00,cat:"Apps",bg:"linear-gradient(145deg,#19c39c,#0b6b55)",mono:"G"},
- {name:"PlayStation Plus",price:11.99,cat:"Gaming",bg:"linear-gradient(145deg,#2f6fe0,#0a2c7a)",mono:"P"}
-];
+let formQ="";
+const catalogAll = () => window.CATALOG || [];
+function catalogFor(type, searching=false){
+  const all=catalogAll();
+  if(searching) return all;
+  if(type==="stuff") return all.filter(p=>p.kind==="stuff"||p.cat==="Protection");
+  // Subscription/Contract: browse every recurring service; picking one sets the type.
+  return all.filter(p=>p.kind!=="stuff");
+}
+function catalogMatch(p,q){
+  if(!q) return true;
+  const s=q.toLowerCase();
+  return p.name.toLowerCase().includes(s) || (p.cat||"").toLowerCase().includes(s) || (p.aka||[]).some(a=>a.toLowerCase().includes(s));
+}
+const CUSTOM_TILE = {id:"custom",name:"Custom",custom:true};
+function catalogTile(p){
+  const on=F.preset && (p.custom ? F.preset.custom : F.preset.id===p.id);
+  if(p.custom) return `<button class="preset ${on?"on":""}" data-preset="custom"><div class="mono sm ghost-mono">${ic("plus")}</div><span>Custom</span></button>`;
+  return `<button class="preset ${on?"on":""}" data-preset="${p.id}">${mono(p,"sm")}<span>${p.name}</span></button>`;
+}
+function catalogResultsHTML(){
+  const t=F.type, q=formQ.trim(), items=catalogFor(t,!!q).filter(p=>catalogMatch(p,q));
+  const order=["Streaming","Music","Gaming","Cloud","Apps","Productivity","News","Food","Fitness","Shopping","Phone","Internet","TV","Utilities","Insurance","Banking","Housing","Auto","Education","Security","Dating","Pets","Transit","Protection","Memberships","Charity","Health"];
+  let html="";
+  if(!q){
+    const popular=catalogFor(t).filter(p=>p.popular);
+    html+=`<div class="presets">${popular.map(catalogTile).join("")}${catalogTile(CUSTOM_TILE)}</div>`;
+  }
+  const cats=[...new Set(items.map(p=>p.cat))];
+  cats.sort((a,b)=>(order.indexOf(a)<0?99:order.indexOf(a))-(order.indexOf(b)<0?99:order.indexOf(b))||a.localeCompare(b));
+  for(const c of cats){
+    const g=items.filter(p=>p.cat===c);
+    if(!g.length) continue;
+    html+=`<div class="h3">${c}</div><div class="presets">${g.map(catalogTile).join("")}</div>`;
+  }
+  if(q){
+    if(!items.length) html+=`<div class="muted" style="margin:8px 0 16px">No matches. Try another name, or pick Custom.</div>`;
+    html+=`<div class="h3">Or</div><div class="presets">${catalogTile(CUSTOM_TILE)}</div>`;
+  }
+  return html;
+}
+function catalogBlock(){
+  if(F.editId) return "";
+  return `<div class="h3">Pick a service</div>
+  <div class="sbox">${ic("search")}<input id="q-cat" placeholder="Search services…" value="${formQ.replace(/"/g,"&quot;")}" autocomplete="off" enterkeyhint="search"><button class="sclr ${formQ?"":"off"}" data-catclr aria-label="Clear">${ic("x")}</button></div>
+  <div id="cat-res">${catalogResultsHTML()}</div>`;
+}
+function applyCatalog(p){
+  if(!p || p.custom){
+    F.preset={id:"custom",name:"Custom",custom:true};
+    F.name=""; F.price="";
+    rerenderForm(); return;
+  }
+  F.preset=p; F.name=p.name;
+  F.price=p.price!=null?Number(p.price).toFixed(2):"";
+  F.cat=p.cat;
+  if(p.cycle) F.cycle=p.cycle;
+  if(p.kind==="contract") F.type="contract";
+  else if(p.kind==="sub") F.type="sub";
+  else if(p.kind==="stuff") F.type="stuff";
+  rerenderForm();
+}
+
 const PAL = ["linear-gradient(145deg,#9d7bff,#4a2db0)","linear-gradient(145deg,#ff7a9c,#b0204a)","linear-gradient(145deg,#4dc3ff,#1559b8)","linear-gradient(145deg,#ffb84d,#b86a0a)","linear-gradient(145deg,#4de0a8,#0b8a5e)","linear-gradient(145deg,#8a8f99,#3b3f47)"];
 const isoOff = n => { const d=dOff(n); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
 const offIso = v => Math.round((new Date(v+"T00:00:00") - today)/864e5);
 let F;
-function resetForm(type="sub"){ F={type,name:"",price:"",cycle:"mo",date:isoOff(type==="stuff"?365:30),cat:type==="sub"?"Streaming":type==="contract"?"Phone":"Electronics",remind:true,preset:null}; }
-function formLook(){ const p=F.preset; const n=F.name.trim(); if(p&&p.name===n) return p; if(F.editId&&F.look&&n===(F.origName||n)) return F.look; return {name:n||"New item",bg:PAL[[...n].reduce((a,c)=>a+c.charCodeAt(0),0)%PAL.length],mono:n?n.replace(/[^A-Za-z0-9]/g,"").slice(0,1).toUpperCase()||"•":"@plus"}; }
+function resetForm(type="sub"){ formQ=""; F={type,name:"",price:"",cycle:"mo",date:isoOff(type==="stuff"?365:30),cat:type==="sub"?"Streaming":type==="contract"?"Phone":"Electronics",remind:true,preset:null}; }
+function formLook(){ const p=F.preset; const n=F.name.trim(); if(p&&!p.custom&&p.name===n) return p; if(F.editId&&F.look&&n===(F.origName||n)) return F.look; return {name:n||"New item",bg:PAL[[...n].reduce((a,c)=>a+c.charCodeAt(0),0)%PAL.length],mono:n?n.replace(/[^A-Za-z0-9]/g,"").slice(0,1).toUpperCase()||"•":"@plus"}; }
 function fillForm(it){
   const isSub=S.subs.includes(it), isCon=S.contracts.includes(it), type=isSub?"sub":isCon?"contract":"stuff";
   const off=isSub?it.due:isCon?(it.end??30):it.warEnd, date=isoOff(off);
@@ -470,14 +525,16 @@ function formPreview(){
   return `${m}<div class="pv-name">${F.name.trim()||({sub:"New subscription",contract:"New contract",stuff:"New purchase"}[F.type])}</div><div class="pv-sub">${lbl} ${isNaN(d)?"—":fdate(d,{month:"short",day:"numeric",year:"numeric"})}${F.type!=="stuff"&&price?` · ${money(F.cycle==="yr"&&F.type==="sub"?price*1:price*12).replace(/\.\d\d$/,"")}/yr`:""}</div>`;
 }
 function manualSheet(){
-  const t=F.type, CAT={sub:["Streaming","Music","Gaming","Apps","Cloud","Food","Shopping"],contract:["Phone","Home","Internet","Insurance","Fitness"],stuff:["Electronics","Appliances","Furniture","Other"]}[t];
+  const t=F.type, CAT={sub:["Streaming","Music","Gaming","Apps","Cloud","Food","Shopping","News","Fitness","Productivity"],contract:["Phone","Internet","TV","Home","Insurance","Fitness","Utilities","Banking","Auto"],stuff:["Electronics","Appliances","Furniture","Protection","Other"]}[t];
   if(F.cat&&!CAT.includes(F.cat)) CAT.unshift(F.cat);
+  const typ=F.preset&&!F.preset.custom&&F.preset.typical&&F.preset.price!=null;
   return `<div class="mf">
   ${F.editId?`<div class="eyebrow" style="text-align:center;margin:4px 0 14px">Editing</div>`:`<div class="seg mf-seg">${[["sub","Subscription"],["contract","Contract"],["stuff","Warranty"]].map(([k,l])=>`<button class="${t===k?"on":""}" data-ftype="${k}">${l}</button>`).join("")}</div>`}
   <div class="pv" id="pv">${formPreview()}</div>
   <div class="amt"><span class="amt-cur">$</span><input id="f-price" class="num" inputmode="decimal" placeholder="0.00" value="${F.price}" aria-label="Amount" style="width:${amtW()}"></div>
   ${t==="sub"?`<div class="cyc"><div class="seg-mini mf-cyc"><button class="${F.cycle==="mo"?"on":""}" data-fcyc="mo">Monthly</button><button class="${F.cycle==="yr"?"on":""}" data-fcyc="yr">Yearly</button></div></div>`:`<div class="amt-hint">${t==="contract"?"per month":"price paid"}</div>`}
-  ${t==="sub"&&!F.editId?`<div class="h3">Popular</div><div class="presets">${PRESETS.map((p,i)=>`<button class="preset ${F.preset===p?"on":""}" data-preset="${i}">${mono(p,"sm")}<span>${p.name}</span></button>`).join("")}</div>`:""}
+  ${typ?`<div class="amt-hint">Typical price · editable</div>`:""}
+  ${catalogBlock()}
   <div class="h3">Details</div>
   <div class="list fields">
     <label class="field"><span>Name</span><input id="f-name" placeholder="${{sub:"e.g. Netflix",contract:"e.g. Rogers phone plan",stuff:"e.g. MacBook Air"}[t]}" value="${F.name.replace(/"/g,"&quot;")}" autocomplete="off"></label>
@@ -659,7 +716,8 @@ document.addEventListener("click", e => {
   if (d.fcyc){ F.cycle=d.fcyc; rerenderForm(); return; }
   if (d.fcat){ e.preventDefault(); F.cat=d.fcat; rerenderForm(); return; }
   if (d.fremind!==undefined){ e.preventDefault(); F.remind=!F.remind; t.classList.toggle("on"); return; }
-  if (d.preset){ const p=PRESETS[+d.preset]; F.preset=p; F.name=p.name; F.price=p.price.toFixed(2); F.cat=p.cat; rerenderForm(); return; }
+  if (d.preset){ applyCatalog(d.preset==="custom"?CUSTOM_TILE:catalogAll().find(x=>x.id===d.preset)); return; }
+  if (d.catclr!==undefined){ formQ=""; rerenderForm(); const i=$("#q-cat"); if(i) i.focus(); return; }
   if (d.fsave!==undefined){ saveForm(); return; }
   if (d.edit){ fillForm(find(d.edit)); openSheet(manualSheet()); return; }
   if (d.delask){ t.style.display="none"; let box=$(".delask"); if(box) box.remove(); box=document.createElement("div"); box.className="delask"; box.innerHTML=`<p>Delete <b>${(find(d.delask)||{}).name||"this"}</b> from Agreed? You can undo this.</p><button class="btn btn-danger" data-delyes="${d.delask}">${ic("trash")}Delete</button><button class="btn btn-ghost" data-delno>Keep it</button>`; t.after(box); box.scrollIntoView({behavior:reduced()?"auto":"smooth",block:"center"}); return; }
@@ -764,6 +822,7 @@ window.agreedPull = dy => { sheetNode.style.transition="none"; sheetNode.style.t
 // manual form live inputs
 document.addEventListener("input", e => {
   if (e.target.id==="q-search"){ searchQ=e.target.value; const pos=e.target.selectionStart, res=$("#q-res"), clr=$(".sclr"); if(res) res.innerHTML=searchResults(); if(clr) clr.classList.toggle("off",!searchQ); e.target.setSelectionRange(pos,pos); return; }
+  if (e.target.id==="q-cat"){ formQ=e.target.value; const pos=e.target.selectionStart, res=$("#cat-res"), clr=e.target.parentElement.querySelector(".sclr"); if(res) res.innerHTML=catalogResultsHTML(); if(clr) clr.classList.toggle("off",!formQ); e.target.setSelectionRange(pos,pos); return; }
   if (!F) return;
   if (e.target.id==="f-name"){ F.name=e.target.value; if(F.preset&&F.preset.name!==F.name) F.preset=null; refreshForm(); }
   if (e.target.id==="f-price"){ F.price=e.target.value.replace(/[^0-9.]/g,""); refreshForm(); }
