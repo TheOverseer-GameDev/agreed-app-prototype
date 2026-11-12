@@ -81,6 +81,11 @@ function header(title, eyebrow, extra=""){
   const unread = S.alerts.filter(a=>a.unread).length;
   return `<div class="top"><div class="eyebrow">${eyebrow||""}</div><div class="top-actions">${extra}<button class="icon-btn" data-go="alerts" aria-label="Alerts">${ic("bell")}${unread?'<span class="dot"></span>':""}</button><button class="avatar" data-go="settings" aria-label="Settings">AM</button></div></div><h1 class="title">${title}</h1>`;
 }
+function emptyState(icon,title,body,cta=""){
+  return `<div class="empty2"><div class="e-art"><span class="e-ring r1"></span><span class="e-ring r2"></span><span class="e-ring r3"></span><div class="e-ic">${ic(icon)}</div></div><h3>${title}</h3><p>${body}</p>${cta}</div>`;
+}
+const swipeRow = (inner, acts) => `<div class="swipe"><div class="swipe-acts">${acts}</div>${inner}</div>`;
+const sa = (cls,icon,label,data) => `<button class="sa ${cls}" ${data}>${ic(icon)}<span>${label}</span></button>`;
 function greeting(){ const h=new Date().getHours(); return h<5?"Good evening":h<12?"Good morning":h<18?"Good afternoon":"Good evening"; }
 
 function Home(){
@@ -104,21 +109,24 @@ function Home(){
   const svTot = sv.reduce((a,s)=>a+s.amt,0);
   const svIco = {pause:"pause",phone:"phone",rotate:"rotate",shield:"shield"};
   const [whole,cents] = amt.toFixed(2).split(".");
+  const isEmpty = all().length===0 && S.stuff.length===0;
+  const hasNf = !!find("netflix");
   return `<section class="screen stagger" data-screen="home">
   ${header(greeting(), fdate(0,{weekday:"long",month:"long",day:"numeric"}))}
   <div class="hero">
     <div class="hero-row"><div class="hero-label">You've agreed to pay</div><div class="seg-mini"><button data-period="mo" class="${S.period==="mo"?"on":""}">Month</button><button data-period="yr" class="${S.period==="yr"?"on":""}">Year</button></div></div>
     <div class="hero-amount num"><span class="cur">$</span><span id="countup" data-to="${amt}">${Number(whole).toLocaleString("en-CA")}</span><span class="cents">.${cents}</span></div>
-    <div class="hero-sub"><span class="chip-up">${ic("trend","").replace('<svg','<svg style="width:12px;height:12px"')}+${money(S.period==="yr"?30:2.5)}</span><span>vs last ${S.period==="yr"?"year":"month"} · Netflix went up</span></div>
-    <div class="stackbar">${bars}</div>
+    ${hasNf?`<div class="hero-sub"><span class="chip-up">${ic("trend","").replace('<svg','<svg style="width:12px;height:12px"')}+${money(S.period==="yr"?30:2.5)}</span><span>vs last ${S.period==="yr"?"year":"month"} · Netflix went up</span></div>`:`<div class="hero-sub">${isEmpty?"Nothing tracked yet":"Across everything you track"}</div>`}
+    <div class="stackbar">${bars||'<span style="flex:1;background:rgba(255,255,255,.22)"></span>'}</div>
     <div class="legend">${legend}</div>
   </div>
   ${!S.imported?`<button class="banner" data-sheet="found"><div class="bi">${ic("spark")}</div><div class="row-main"><div class="row-title">We found 3 more recurring charges</div><div class="row-sub">From your bank and inbox · tap to review</div></div>${ic("chev","chev").replace('<svg','<svg style="width:18px;height:18px;color:var(--text-3)"')}</button>`:""}
-  <div class="section"><div class="sec-head"><div class="sec-title">Needs your attention</div><button class="sec-link" data-go="alerts">See all</button></div><div class="hscroll">${cards}</div></div>
-  <div class="section"><div class="sec-head"><div class="sec-title">Coming up</div><span class="muted small">Next 3 weeks</span></div><div class="tl"><div class="tl-rail"></div>${tl}</div></div>
-  <div class="section"><div class="save-card"><div class="sec-head" style="margin-bottom:2px"><div><div class="eyebrow" style="color:var(--green);opacity:.9">Ways to save</div><div class="save-amt num">${money(svTot)}<span style="font-size:15px;font-weight:600;opacity:.8">/mo</span></div></div><span class="pill p-green">≈ ${money(svTot*12).replace(/\.\d\d$/,"")}/yr</span></div>
+  ${isEmpty?`<div class="section">${emptyState("spark","Let's find what you've agreed to","Connect a bank or forward a receipt and we'll fill this in for you. Most people are set up in under a minute.",`<button class="btn btn-primary e-cta" data-go="add">${ic("plus")}Find my subscriptions</button>`)}</div>`:`
+  ${cards?`<div class="section"><div class="sec-head"><div class="sec-title">Needs your attention</div><button class="sec-link" data-go="alerts">See all</button></div><div class="hscroll">${cards}</div></div>`:""}
+  ${tl?`<div class="section"><div class="sec-head"><div class="sec-title">Coming up</div><span class="muted small">Next 3 weeks</span></div><div class="tl"><div class="tl-rail"></div>${tl}</div></div>`:""}
+  ${sv.length?`<div class="section"><div class="save-card"><div class="sec-head" style="margin-bottom:2px"><div><div class="eyebrow" style="color:var(--green);opacity:.9">Ways to save</div><div class="save-amt num">${money(svTot)}<span style="font-size:15px;font-weight:600;opacity:.8">/mo</span></div></div><span class="pill p-green">≈ ${money(svTot*12).replace(/\.\d\d$/,"")}/yr</span></div>
     ${sv.map(s=>`<button class="save-item" data-open="${s.item}"><div class="save-ico">${ic(svIco[s.icon])}</div><div class="row-main"><div class="row-title" style="font-size:14.5px">${s.title}</div><div class="row-sub" style="font-size:12.5px;white-space:normal">${s.body}</div></div><div class="row-amt num" style="color:var(--green);font-size:14px">−${money(s.amt)}</div></button>`).join("")}
-  </div></div>
+  </div></div>`:""}`}
   </section>`;
 }
 
@@ -132,7 +140,9 @@ function Subs(){
   ${header("Subscriptions","Recurring")}
   <div class="strip"><div class="stat"><b class="num">${money(m).replace(/\.\d\d$/,"")}</b><span>per month</span></div><div class="stat"><b class="num">${money(m*12).replace(/\.\d\d$/,"")}</b><span>per year</span></div><div class="stat"><b class="num">${S.subs.length}</b><span>active</span></div></div>
   <div class="pills">${cats.map(c=>`<button class="fpill ${c===subFilter?"on":""}" data-subf="${c}">${c}</button>`).join("")}</div>
-  ${list.length?`<div class="list">${list.map(s=>`<button class="row" data-open="${s.id}">${mono(s)}<div class="row-main"><div class="row-title">${s.name}</div><div class="row-sub">${s.trial?`<span style="color:var(--amber);font-weight:600">Trial ends ${rel(s.due).toLowerCase()}</span>`:s.priceChange?`<span style="color:var(--red);font-weight:600">Price up ${Math.round((s.priceChange.to/s.priceChange.from-1)*100)}%</span> · ${rel(s.due).toLowerCase()}`:s.unused?`<span style="color:var(--text-2)">Unused 7 weeks</span> · ${rel(s.due).toLowerCase()}`:`Renews ${rel(s.due).toLowerCase()}`}</div></div><div class="row-end"><div class="row-amt num">${money(s.price)}</div><div class="row-cyc">${s.cycle==="yr"?"per year":"per month"}</div></div></button>`).join("")}</div>`:`<div class="empty"><div class="eic">${ic("subs")}</div><b>Nothing here</b><div class="small">No ${subFilter.toLowerCase()} right now.</div></div>`}
+  ${list.length?`<div class="list">${list.map(s=>swipeRow(`<button class="row swipe-fg" data-open="${s.id}">${mono(s)}<div class="row-main"><div class="row-title">${s.name}</div><div class="row-sub">${s.trial?`<span style="color:var(--amber);font-weight:600">Trial ends ${rel(s.due).toLowerCase()}</span>`:s.priceChange?`<span style="color:var(--red);font-weight:600">Price up ${Math.round((s.priceChange.to/s.priceChange.from-1)*100)}%</span> · ${rel(s.due).toLowerCase()}`:s.unused?`<span style="color:var(--text-2)">Unused 7 weeks</span> · ${rel(s.due).toLowerCase()}`:`Renews ${rel(s.due).toLowerCase()}`}</div></div><div class="row-end"><div class="row-amt num">${money(s.price)}</div><div class="row-cyc">${s.cycle==="yr"?"per year":"per month"}</div></div></button>`, sa("sa-blue","bell","Remind",`data-remind="${s.id}"`)+sa("sa-red","x","Cancel",`data-cancel="${s.id}"`))).join("")}</div><p class="hint">${ic("chevL")}Swipe a row for quick actions</p>`:
+   S.subs.length? emptyState(subFilter==="Trials"?"hourglass":"subs", subFilter==="Trials"?"No free trials running":`No ${subFilter.toLowerCase()} subscriptions`, subFilter==="Trials"?"When you start a trial, we'll warn you 2 days before it turns into a paid plan.":"Nothing in this category yet. Try another filter.", `<button class="btn btn-ghost e-cta" data-subf="All">Show all</button>`)
+   : emptyState("subs","No subscriptions yet","Connect your bank and we'll find every Netflix, Spotify and app store charge for you.",`<button class="btn btn-primary e-cta" data-go="add">${ic("plus")}Find my subscriptions</button>`)}
   </section>`;
 }
 
@@ -143,25 +153,27 @@ function Contracts(){
   return `<section class="screen stagger" data-screen="contracts">
   ${header("Contracts","Leases, plans & policies")}
   <div class="strip"><div class="stat"><b class="num">${money(m).replace(/\.\d\d$/,"")}</b><span>per month</span></div><div class="stat"><b class="num" style="color:var(--red)">${flags}</b><span>red flags</span></div><div class="stat"><b class="num">${next?next.cancelBy+"d":"—"}</b><span>next deadline</span></div></div>
+  ${!S.contracts.length?emptyState("file","No contracts yet","Snap a photo of a lease, phone plan or insurance policy. We'll explain the fine print and flag anything risky.",`<button class="btn btn-primary e-cta" data-sheet="scan">${ic("camera")}Scan a contract</button>`):""}
   ${S.contracts.map(c=>{ const pct = c.end? Math.min(100,Math.round(-c.start/(c.end-c.start)*100)) : null;
    return `<button class="ccard" data-open="${c.id}"><div class="ccard-top">${mono(c)}<div class="row-main"><div class="row-title">${c.name}</div><div class="row-sub">${c.plan}</div></div><div class="row-end"><div class="row-amt num">${money(c.price).replace(/\.00$/,"")}</div><div class="row-cyc">/month</div></div></div>
    ${pct!==null?`<div class="progress"><i style="width:${pct}%"></i></div><div class="meta"><span>${fdate(c.start,{month:"short",year:"numeric"})}</span><span>${pct}% through · ends ${fdate(c.end,{month:"short",day:"numeric",year:"numeric"})}</span></div>`:`<div class="progress"><i style="width:100%;background:linear-gradient(90deg,var(--surface-2),var(--line-2))"></i></div><div class="meta"><span>Month-to-month</span><span>${c.notice} notice to cancel</span></div>`}
-   <div class="ccard-foot">${c.cancelBy?`<span class="pill p-amber">${ic("clock")}Decide by ${fdate(c.cancelBy)}</span>`:""}<span class="pill p-red">${ic("alert")}${c.red.length} red flag${c.red.length>1?"s":""}</span></div></button>`}).join("")}
+   <div class="ccard-foot">${c.cancelBy?`<span class="pill p-amber">${ic("clock")}Decide by ${fdate(c.cancelBy)}</span>`:""}${c.red.length?`<span class="pill p-red">${ic("alert")}${c.red.length} red flag${c.red.length>1?"s":""}</span>`:`<span class="pill p-green">${ic("checkc")}No red flags</span>`}</div></button>`}).join("")}
   </section>`;
 }
 
 function Stuff(){
   const rets = S.stuff.filter(w=>w.ret).sort((a,b)=>a.ret-b.ret);
-  const ring = w => { const tot=w.warEnd-w.bought, left=Math.max(0,w.warEnd), p=left/tot; const C=2*Math.PI*22; const col = left<120?"var(--amber)":"var(--green)";
+  const ring = w => { const tot=Math.max(1,w.warEnd-w.bought), left=Math.max(0,w.warEnd), p=Math.min(1,left/tot); const C=2*Math.PI*22; const col = left<120?"var(--amber)":"var(--green)";
     return `<div class="ring"><svg viewBox="0 0 54 54"><circle class="bgc" cx="27" cy="27" r="22"/><circle class="fg" cx="27" cy="27" r="22" stroke="${col}" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-p)}" style="stroke-dasharray:${C};--o:${C*(1-p)}"/></svg><b class="num">${Math.round(p*100)}%</b></div>`; };
   const left = d => d>=365?`${(d/365).toFixed(1).replace(".0","")} yr left`:`${Math.round(d/30)} mo left`;
   return `<section class="screen stagger" data-screen="stuff">
   ${header("Warranties","Returns & protection")}
+  ${!S.stuff.length?emptyState("shieldc","Nothing under warranty yet","Snap a receipt after you buy something. We'll track the return window, the warranty and any recalls.",`<button class="btn btn-primary e-cta" data-sheet="scan">${ic("camera")}Scan a receipt</button>`):""}
   ${rets.length?`<div class="sec-head"><div class="sec-title">Return windows</div><span class="muted small">${rets.length} open</span></div>
   ${rets.map(w=>`<button class="ret" data-open="${w.id}"><div class="count num">${w.ret}<small>days</small></div><div class="row-main"><div class="row-title">${w.name}</div><div class="row-sub">${w.store} · return by ${fdate(w.ret)}</div></div>${mono(w,"sm")}</button>`).join("")}`:""}
-  <div class="section" style="margin-top:22px"><div class="sec-head"><div class="sec-title">Under warranty</div><span class="muted small">${money(S.stuff.reduce((a,w)=>a+w.price,0)).replace(/\.\d\d$/,"")} protected</span></div>
+  ${S.stuff.length?`<div class="section" style="margin-top:22px"><div class="sec-head"><div class="sec-title">Under warranty</div><span class="muted small">${money(S.stuff.reduce((a,w)=>a+w.price,0)).replace(/\.\d\d$/,"")} protected</span></div>
   <div class="wgrid">${S.stuff.map(w=>`<button class="wcard" data-open="${w.id}"><div style="display:flex;justify-content:space-between;align-items:flex-start">${mono(w,"sm")}${ring(w)}</div><div><div class="wname">${w.name}</div><div class="wsub">${w.store}</div></div><span class="pill ${w.warEnd<120?"p-amber":"p-green"}" style="align-self:flex-start">${ic("shield")}${left(w.warEnd)}</span></button>`).join("")}</div></div>
-  <div class="section"><div class="src">${ic("checkc")}No recalls on your items · checked against Health Canada today</div></div>
+  <div class="section"><div class="src">${ic("checkc")}No recalls on your items · checked against Health Canada today</div></div>`:""}
   </section>`;
 }
 
@@ -177,7 +189,7 @@ function Alerts(){
   <div class="top"><button class="back" data-go="home">${ic("chevL")}Home</button>${unread?`<button class="sec-link" data-readall>Mark all read</button>`:""}</div>
   <h1 class="title">Alerts${unread?` <span class="pill p-violet" style="font-size:13px;vertical-align:6px">${unread} new</span>`:""}</h1>
   <div class="pills">${Object.keys(groups).map(g=>`<button class="fpill ${g===alertFilter?"on":""}" data-af="${g}">${g}</button>`).join("")}</div>
-  <div class="list">${list.map(a=>{const [c,i]=ATONE[a.type]; return `<button class="aitem ${a.unread?"unread":""}" data-alert="${a.id}"><div class="aico" style="background:${bg[c]};color:${fg[c]}">${ic(i)}</div><div class="row-main"><div class="atitle">${a.title}</div><div class="abody">${a.body}</div>${a.diff?`<div class="diff"><span class="old">${a.diff[0]}</span><span class="new">${a.diff[1]}</span></div>`:""}<div class="atime">${ago(a.when)} · ${find(a.item)?.name||""}</div></div></button>`}).join("")}</div>
+  ${list.length?`<div class="list">${list.map(a=>{const [c,i]=ATONE[a.type]; return swipeRow(`<button class="aitem swipe-fg ${a.unread?"unread":""}" data-alert="${a.id}"><div class="aico" style="background:${bg[c]};color:${fg[c]}">${ic(i)}</div><div class="row-main"><div class="atitle">${a.title}</div><div class="abody">${a.body}</div>${a.diff?`<div class="diff"><span class="old">${a.diff[0]}</span><span class="new">${a.diff[1]}</span></div>`:""}<div class="atime">${ago(a.when)} · ${find(a.item)?.name||""}</div></div></button>`, sa("sa-green","check","Done",`data-done="${a.id}"`)+sa("sa-red","trash","Delete",`data-del="${a.id}"`))}).join("")}</div>`:emptyState("bell","You're all caught up","We'll let you know before anything renews, a trial ends or a company changes its price or terms.")}
   <p class="muted small" style="text-align:center;margin-top:18px">We re-read every company's terms and prices weekly and tell you only what changed for you.</p>
   </section>`;
 }
@@ -189,6 +201,7 @@ function Add(){
   <button class="add-opt" data-sheet="bank"><div class="oi" style="background:linear-gradient(145deg,#7C5CFF,#3D8BFF)">${ic("bank")}</div><div><h4>Connect your bank</h4><p>Finds every recurring charge from the last 12 months</p></div><span class="pill p-green tag-best">Fastest</span></button>
   <button class="add-opt" data-sheet="email"><div class="oi" style="background:linear-gradient(145deg,#FF5C8A,#FF8A5C)">${ic("mail")}</div><div><h4>Forward or connect email</h4><p>Pulls receipts, trial sign-ups and renewal notices</p></div>${ic("chev","chev")}</button>
   <button class="add-opt" data-sheet="scan"><div class="oi" style="background:linear-gradient(145deg,#2ED39A,#14A3C7)">${ic("camera")}</div><div><h4>Scan a contract or receipt</h4><p>Leases, phone plans, warranties — we read the fine print</p></div>${ic("chev","chev")}</button>
+  <button class="manual-link" data-sheet="manual"><span>${ic("plus")}</span>Or add one yourself<small>Takes 10 seconds</small></button>
   <div class="section"><div class="card pad" style="display:flex;gap:12px;align-items:center">${ic("lock").replace('<svg','<svg style="width:22px;height:22px;color:var(--green);flex:none"')}<div class="small muted">Read-only access. We can never move money, and your documents are encrypted on your device.</div></div></div>
   </section>`;
 }
@@ -209,8 +222,8 @@ function Settings(){
    ${row("#005DAA","bank","RBC Chequing","<span class='pill p-green'>Synced</span>")}${row("#008A3E","bank","TD Visa","<span class='pill p-green'>Synced</span>")}${row("#FF5C8A","mail","Email forwarding","<span class='val'>On</span>")}</div></div>
   <div class="set-group"><div class="h3">Household & privacy</div><div class="list">
    ${row("#8B5CF6","users","Share with partner",tog("share"))}${row("#111","lock","Face ID lock",tog("lock"))}${row("#2ED39A","dollar","Currency","<span class='val'>CAD $</span>")}${row("#4DA3FF","download","Export everything","<span class='val'>PDF · CSV</span>")}</div></div>
-  <button class="btn btn-danger" data-reset>${ic("rotate")}Reset demo data</button>
-  <p class="muted small" style="text-align:center;margin-top:16px">Agreed · prototype v0.1 · sample data only</p>
+  <div class="actions" style="margin-top:0"><button class="btn btn-ghost" data-fresh>${ic("spark")}Start fresh (empty app)</button><button class="btn btn-danger" data-reset>${ic("rotate")}Reset demo data</button></div>
+  <p class="muted small" style="text-align:center;margin-top:16px">Agreed · prototype v0.2 · sample data only</p>
   </section>`;
 }
 
@@ -235,8 +248,8 @@ function contractSheet(c){
   return `<div class="sheet-head">${mono(c,"lg")}<div><h2>${c.name}</h2><div class="muted">${c.plan}</div></div><div class="big num">${money(c.price).replace(/\.00$/,"")}<span style="font-size:16px;font-weight:600;color:var(--text-2)"> /month</span></div></div>
   <div class="facts"><div class="fact"><span>Term ends</span><b>${c.end?fdate(c.end,{month:"short",day:"numeric",year:"numeric"}):"Rolling"}</b></div><div class="fact"><span>Decide by</span><b style="color:${c.cancelBy?"var(--amber)":"inherit"}">${c.cancelBy?fdate(c.cancelBy):"Any time"}</b></div><div class="fact"><span>Notice to cancel</span><b>${c.notice}</b></div><div class="fact"><span>Per year</span><b class="num">${money(c.price*12).replace(/\.00$/,"")}</b></div></div>
   <div class="h3">In plain English</div><ul class="bullets">${c.summary.map(x=>`<li>${ic("checkc")}<span>${x}</span></li>`).join("")}</ul>
-  <div class="h3">Red flags</div>${c.red.map(r=>`<div class="flag ${r.lvl}">${ic("alert")}<div>${r.t}</div></div>`).join("")}
-  <div class="h3">Ask about this contract</div><div class="ask">${Object.keys(c.qa).map(q=>`<button data-q="${c.id}" data-qq="${q}">${q}</button>`).join("")}</div><div id="ans"></div>
+  <div class="h3">Red flags</div>${c.red.length?c.red.map(r=>`<div class="flag ${r.lvl}">${ic("alert")}<div>${r.t}</div></div>`).join(""):`<div class="src">${ic("checkc")}Nothing risky found yet. Add the document for a full check.</div>`}
+  ${Object.keys(c.qa).length?`<div class="h3">Ask about this contract</div><div class="ask">${Object.keys(c.qa).map(q=>`<button data-q="${c.id}" data-qq="${q}">${q}</button>`).join("")}</div>`:""}<div id="ans"></div>
   <div class="actions"><button class="btn btn-primary" data-script="${c.id}">${ic("msg")}Get a negotiation script</button><button class="btn btn-ghost" data-toast="Original document opened">${ic("file")}View original document</button></div>`;
 }
 function stuffSheet(w){
@@ -274,15 +287,78 @@ function scanDone(){
   <div class="actions"><button class="btn btn-primary" data-close data-toast="Added Aviva home insurance">${ic("plus")}Add to Agreed</button></div></div>`;
 }
 
+const PRESETS = [
+ {name:"Netflix",price:18.99,cat:"Streaming",bg:"linear-gradient(145deg,#1c1c1c,#000)",fg:"#E50914",mono:"N"},
+ {name:"Spotify",price:11.99,cat:"Music",bg:"linear-gradient(145deg,#1ed760,#0f7a37)",mono:"S"},
+ {name:"Apple TV+",price:12.99,cat:"Streaming",bg:"linear-gradient(145deg,#3a3a3c,#000)",mono:"@play"},
+ {name:"Disney+",price:11.99,cat:"Streaming",bg:"linear-gradient(145deg,#0A2FB4,#061a5e)",mono:"D+"},
+ {name:"ChatGPT Plus",price:28.00,cat:"Apps",bg:"linear-gradient(145deg,#19c39c,#0b6b55)",mono:"G"},
+ {name:"PlayStation Plus",price:11.99,cat:"Gaming",bg:"linear-gradient(145deg,#2f6fe0,#0a2c7a)",mono:"P"}
+];
+const PAL = ["linear-gradient(145deg,#9d7bff,#4a2db0)","linear-gradient(145deg,#ff7a9c,#b0204a)","linear-gradient(145deg,#4dc3ff,#1559b8)","linear-gradient(145deg,#ffb84d,#b86a0a)","linear-gradient(145deg,#4de0a8,#0b8a5e)","linear-gradient(145deg,#8a8f99,#3b3f47)"];
+const isoOff = n => { const d=dOff(n); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
+const offIso = v => Math.round((new Date(v+"T00:00:00") - today)/864e5);
+let F;
+function resetForm(type="sub"){ F={type,name:"",price:"",cycle:"mo",date:isoOff(type==="stuff"?365:30),cat:type==="sub"?"Streaming":type==="contract"?"Phone":"Electronics",remind:true,preset:null}; }
+function formLook(){ const p=F.preset; const n=F.name.trim(); return p&&p.name===n?p:{name:n||"New item",bg:PAL[[...n].reduce((a,c)=>a+c.charCodeAt(0),0)%PAL.length],mono:n?n.replace(/[^A-Za-z0-9]/g,"").slice(0,1).toUpperCase()||"•":"@plus"}; }
+function formPreview(){
+  const lk=formLook(), d=offIso(F.date), price=parseFloat(F.price)||0;
+  const lbl={sub:F.cycle==="yr"?"Renews":"Next charge",contract:"Term ends",stuff:"Warranty ends"}[F.type];
+  const m = lk.mono==="@plus" ? `<div class="mono lg ghost-mono">${ic("plus")}</div>` : mono(lk,"lg");
+  return `${m}<div class="pv-name">${F.name.trim()||({sub:"New subscription",contract:"New contract",stuff:"New purchase"}[F.type])}</div><div class="pv-sub">${lbl} ${isNaN(d)?"—":fdate(d,{month:"short",day:"numeric",year:"numeric"})}${F.type!=="stuff"&&price?` · ${money(F.cycle==="yr"&&F.type==="sub"?price*1:price*12).replace(/\.\d\d$/,"")}/yr`:""}</div>`;
+}
+function manualSheet(){
+  const t=F.type, CAT={sub:["Streaming","Music","Gaming","Apps","Cloud","Food","Shopping"],contract:["Phone","Home","Internet","Insurance","Fitness"],stuff:["Electronics","Appliances","Furniture","Other"]}[t];
+  return `<div class="mf">
+  <div class="seg mf-seg">${[["sub","Subscription"],["contract","Contract"],["stuff","Warranty"]].map(([k,l])=>`<button class="${t===k?"on":""}" data-ftype="${k}">${l}</button>`).join("")}</div>
+  <div class="pv" id="pv">${formPreview()}</div>
+  <div class="amt"><span class="amt-cur">$</span><input id="f-price" class="num" inputmode="decimal" placeholder="0.00" value="${F.price}" aria-label="Amount" style="width:${amtW()}"></div>
+  ${t==="sub"?`<div class="cyc"><div class="seg-mini mf-cyc"><button class="${F.cycle==="mo"?"on":""}" data-fcyc="mo">Monthly</button><button class="${F.cycle==="yr"?"on":""}" data-fcyc="yr">Yearly</button></div></div>`:`<div class="amt-hint">${t==="contract"?"per month":"price paid"}</div>`}
+  ${t==="sub"?`<div class="h3">Popular</div><div class="presets">${PRESETS.map((p,i)=>`<button class="preset ${F.preset===p?"on":""}" data-preset="${i}">${mono(p,"sm")}<span>${p.name}</span></button>`).join("")}</div>`:""}
+  <div class="h3">Details</div>
+  <div class="list fields">
+    <label class="field"><span>Name</span><input id="f-name" placeholder="${{sub:"e.g. Netflix",contract:"e.g. Rogers phone plan",stuff:"e.g. MacBook Air"}[t]}" value="${F.name.replace(/"/g,"&quot;")}" autocomplete="off"></label>
+    <label class="field"><span>${{sub:"Next charge",contract:"Term ends",stuff:"Warranty ends"}[t]}</span><input id="f-date" type="date" value="${F.date}"></label>
+    <div class="field"><span>Category</span><div class="catpills">${CAT.map(c=>`<button class="cp ${F.cat===c?"on":""}" data-fcat="${c}">${c}</button>`).join("")}</div></div>
+    <div class="field"><span>Remind me 3 days before</span><button class="toggle ${F.remind?"on":""}" data-fremind aria-label="Reminder"></button></div>
+  </div>
+  <div class="actions"><button class="btn btn-primary" data-fsave ${F.name.trim()&&parseFloat(F.price)>0?"":"disabled"}>${ic("check")}Save ${({sub:"subscription",contract:"contract",stuff:"item"})[t]}</button></div></div>`;
+}
+const amtW = () => ((F.price||"0.00").length*0.6+0.12)+"em";
+function refreshForm(){ const ai=$("#f-price"); if(ai) ai.style.width=amtW(); const pv=$("#pv"); if(pv) pv.innerHTML=formPreview(); const b=$("[data-fsave]"); if(b) b.disabled=!(F.name.trim()&&parseFloat(F.price)>0); }
+function rerenderForm(){ const sc=sheetEl().scrollTop; sheetEl().innerHTML=SHEET_CHROME()+manualSheet(); sheetEl().scrollTop=sc; }
+function saveForm(){
+  const lk=formLook(), d=Math.max(1,offIso(F.date)||30), price=Math.round(parseFloat(F.price)*100)/100, id="m"+Date.now();
+  const base={id,name:F.name.trim(),bg:lk.bg,fg:lk.fg,mono:lk.mono==="@plus"?"•":lk.mono,cat:F.cat};
+  if(F.type==="sub") S.subs.push({...base,plan:F.cycle==="yr"?"Annual":"Monthly",price,cycle:F.cycle,due:d,src:"manual",srcText:"Added by you",history:[price,price,price,price,price]});
+  else if(F.type==="contract") S.contracts.push({...base,plan:F.cat+" · added by you",price,cycle:"mo",start:-1,end:d,cancelBy:null,notice:"—",summary:["Add the document and we'll write a plain-English summary here."],red:[],qa:{}});
+  else S.stuff.push({...base,store:"Added by you",price,bought:0,ret:null,warEnd:d});
+  S.imported=true; save(); closeSheet(); render(); toast(`Added ${base.name}`);
+}
+const SHEET_CHROME = () => `<div class="grab"></div><button class="sheet-x" data-close aria-label="Close">${ic("x")}</button>`;
 const sheetEl = () => $(".sheet"), scrim = () => $(".scrim");
-function openSheet(html){ const s=sheetEl(); s.innerHTML=`<div class="grab"></div><button class="sheet-x" data-close aria-label="Close">${ic("x")}</button>`+html; s.scrollTop=0; requestAnimationFrame(()=>{s.classList.add("show");scrim().classList.add("show");}); }
-function closeSheet(){ sheetEl().classList.remove("show"); scrim().classList.remove("show"); }
-function openItem(id){
+function openSheet(html){ if(openFg) closeFg(openFg); const s=sheetEl(); s.style.transform=""; s.innerHTML=SHEET_CHROME()+html; s.scrollTop=0; scrim().style.opacity=""; requestAnimationFrame(()=>{s.classList.add("show");scrim().classList.add("show");}); }
+function closeSheet(){ const s=sheetEl(); s.classList.remove("show"); s.style.transform=""; scrim().classList.remove("show"); scrim().style.opacity=""; }
+const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+function openItem(id, srcEl){
   const it = find(id); if(!it) return;
   if (S.subs.includes(it)) openSheet(subSheet(it)); else if (S.contracts.includes(it)) openSheet(contractSheet(it)); else openSheet(stuffSheet(it));
+  const src = srcEl && srcEl.querySelector(".mono"); const dst = sheetEl().querySelector(".sheet-head .mono");
+  if (!src || !dst || reduced()) return;
+  // shared-element: fly the row's icon into the sheet header while the sheet rises
+  const sh = sheetEl(), a = src.getBoundingClientRect(), arect = app.getBoundingClientRect();
+  const lift = sh.getBoundingClientRect().top - (arect.bottom - sh.offsetHeight);
+  const b0 = dst.getBoundingClientRect(), b = {left:b0.left, top:b0.top - lift, width:b0.width, height:b0.height};
+  const ghost = src.cloneNode(true); ghost.classList.add("ghost");
+  Object.assign(ghost.style,{position:"absolute",left:(a.left-arect.left)+"px",top:(a.top-arect.top)+"px",width:a.width+"px",height:a.height+"px",margin:0,zIndex:60,transformOrigin:"top left",fontSize:getComputedStyle(src).fontSize,borderRadius:getComputedStyle(src).borderRadius});
+  app.appendChild(ghost); dst.style.opacity=0; src.style.opacity=0;
+  const sx=b.width/a.width, dx=b.left-a.left, dy=b.top-a.top;
+  const anim = ghost.animate([{transform:"translate(0,0) scale(1)",boxShadow:"0 6px 14px -8px rgba(0,0,0,.5)"},{transform:`translate(${dx}px,${dy}px) scale(${sx})`,boxShadow:"0 20px 40px -12px rgba(0,0,0,.6)"}],{duration:460,easing:"cubic-bezier(.2,.9,.2,1)",fill:"forwards"});
+  sh.querySelector(".sheet-head").classList.add("head-in");
+  anim.onfinish = () => { dst.style.opacity=""; ghost.remove(); setTimeout(()=>{src.style.opacity="";},120); };
 }
 window.agreedOpen = openItem;
-window.agreedSheet = k => ({found:()=>openSheet(foundSheet()),bank:()=>openSheet(bankSheet()),email:()=>openSheet(emailSheet()),scan:()=>startScan()})[k]();
+window.agreedSheet = k => ({manual:()=>{resetForm();openSheet(manualSheet());},found:()=>openSheet(foundSheet()),bank:()=>openSheet(bankSheet()),email:()=>openSheet(emailSheet()),scan:()=>startScan()})[k]();
 function startScan(){ openSheet(scanSheet()); setTimeout(()=>{const r=$("#scanres"); if(r) r.innerHTML=scanDone(); const l=$(".scanline"); if(l) l.style.display="none";},2400); }
 function runImport(label){ openSheet(scanningSheet(label)); setTimeout(()=>{ if(sheetEl().classList.contains("show")) sheetEl().innerHTML=`<div class="grab"></div>`+foundSheet(); },1700); }
 
@@ -292,6 +368,7 @@ const TABS = [["home","home","Home"],["subs","subs","Subs"],["add","plus",""],["
 function route(){ return (location.hash.replace("#/","")||"home").split("?")[0]; }
 function render(){
   const r = ROUTES[route()] ? route() : "home";
+  openFg = null;
   const view = $("#view");
   view.innerHTML = ROUTES[r]();
   $(".tabbar").innerHTML = TABS.map(([k,i,l])=> k==="add" ? `<button class="fab" data-go="add" aria-label="Add">${ic("plus")}</button>` : `<button class="tab ${r===k?"on":""}" data-go="${k}">${ic(i)}<span>${l}</span><span class="tdot"></span></button>`).join("");
@@ -311,7 +388,7 @@ function applyTheme(){
 function onboarding(){
   if (S.onboarded) return;
   const o = document.createElement("div"); o.className="onb";
-  const fc = (it,txt,pill,c,top,rot,delay) => `<div class="fcard" style="top:${top}px;transform:rotate(${rot}deg);animation-delay:${delay}s">${mono(it,"sm")}<div class="row-main"><div class="row-title" style="font-size:14px">${it.name}</div><div style="font-size:12px;opacity:.7">${txt}</div></div><span class="pill p-${c}">${pill}</span></div>`;
+  const fc = (it,txt,pill,c,top,rot,delay) => `<div class="fcard" style="top:${top}px;rotate:${rot}deg;animation-delay:${delay}s">${mono(it,"sm")}<div class="row-main"><div class="row-title" style="font-size:14px">${it.name}</div><div style="font-size:12px;opacity:.7">${txt}</div></div><span class="pill p-${c}">${pill}</span></div>`;
   o.innerHTML = `<div class="onb-art"><div class="orb"></div><div class="stack">${fc(S.subs[0],"Price up to $18.99","+15%","red",0,-4,.1)}${fc(S.contracts[0],"Promo ends · +$20/mo","60 days","amber",84,3,.25)}${fc(S.stuff[0],"Return window closes","3 days","violet",168,-2,.4)}</div></div>
   <div><h1>Everything you've <em>agreed</em> to. In one place.</h1><p>Subscriptions, contracts, leases and warranties — found automatically, explained in plain English, and watched for price hikes.</p>
   <button class="btn btn-primary" data-start>Get started</button><p class="small" style="text-align:center;margin:14px 0 0">Takes about 30 seconds · no typing</p></div>`;
@@ -320,11 +397,21 @@ function onboarding(){
 
 /* ---------- events ---------- */
 document.addEventListener("click", e => {
+  if (swallow){ swallow=false; e.preventDefault(); e.stopPropagation(); return; }
   const t = e.target.closest("button,[data-close]"); if(!t) return;
   const d = t.dataset;
   if (d.toast) toast(d.toast);
   if (d.go){ closeSheet(); location.hash="#/"+d.go; return; }
-  if (d.open){ openItem(d.open); return; }
+  if (d.open){ openItem(d.open, t); return; }
+  if (d.ftype){ const keep={name:F.name,price:F.price}; resetForm(d.ftype); Object.assign(F,keep); rerenderForm(); return; }
+  if (d.fcyc){ F.cycle=d.fcyc; rerenderForm(); return; }
+  if (d.fcat){ e.preventDefault(); F.cat=d.fcat; rerenderForm(); return; }
+  if (d.fremind!==undefined){ e.preventDefault(); F.remind=!F.remind; t.classList.toggle("on"); return; }
+  if (d.preset){ const p=PRESETS[+d.preset]; F.preset=p; F.name=p.name; F.price=p.price.toFixed(2); F.cat=p.cat; rerenderForm(); return; }
+  if (d.fsave!==undefined){ saveForm(); return; }
+  if (d.done){ const a=S.alerts.find(x=>x.id===d.done); if(a) a.unread=false; save(); render(); toast("Marked as done"); return; }
+  if (d.del){ S.alerts=S.alerts.filter(x=>x.id!==d.del); save(); render(); toast("Alert deleted"); return; }
+  if (d.fresh!==undefined){ Object.assign(S,{subs:[],contracts:[],stuff:[],alerts:[],savings:[],found:[],imported:true}); save(); location.hash="#/home"; render(); toast("Starting fresh"); return; }
   if (d.sheet){ window.agreedSheet(d.sheet); return; }
   if (d.period){ S.period=d.period; save(); render(); return; }
   if (d.subf){ subFilter=d.subf; render(); return; }
@@ -344,9 +431,58 @@ document.addEventListener("click", e => {
   if (d.script){ const c=find(d.script); $("#ans").innerHTML=`<div class="answer"><div class="who">${ic("spark").replace('<svg','<svg style="width:14px;height:14px;color:#A592FF"')}Your script for ${c.name}</div>“Hi, I've been a customer for ${Math.round(-c.start/30)} months and my ${c.plan.split("·")[0].trim()} is coming up for renewal. I've seen better offers from competitors at about ${money(c.price*.8).replace(/\.\d\d$/,"")}/month. Before I switch, can you match that or put me on a new promotion? If not, I'd like to know the cancellation steps.”</div>`; $("#ans").scrollIntoView({behavior:"smooth",block:"center"}); return; }
   if (d.howcancel){ const s=find(d.howcancel); $("#howto").innerHTML=`<div class="answer"><div class="who">${ic("spark").replace('<svg','<svg style="width:14px;height:14px;color:#A592FF"')}3 steps · about 2 minutes</div>1. Open ${s.name} → Account → Membership.<br>2. Tap “Cancel ${s.trial?"trial":"membership"}” and confirm.<br>3. You keep access until ${fdate(s.due)} — no refund needed.</div>`; return; }
   if (d.remind){ toast("We'll remind you "+fdate(Math.max(0,find(d.remind).due-3))); return; }
-  if (d.cancel){ S.subs=S.subs.filter(s=>s.id!==d.cancel); save(); closeSheet(); render(); toast("Marked as cancelled · saving tracked"); return; }
+  if (d.cancel){ const sv=find(d.cancel); S.subs=S.subs.filter(s=>s.id!==d.cancel); save(); closeSheet(); render(); toast(`Cancelled · saving ${money(sv?monthly(sv):0)}/mo`); return; }
 });
 document.addEventListener("click", e => { if (e.target.classList.contains("scrim")) closeSheet(); });
+/* ---------- gestures ---------- */
+let swallow=false, sw=null, openFg=null;
+const closeFg = fg => { if(!fg) return; fg.style.transition="transform .35s cubic-bezier(.2,.9,.2,1)"; fg.style.transform="translateX(0)"; fg._x=0; fg.parentElement.classList.remove("is-open"); if(openFg===fg) openFg=null; };
+document.addEventListener("pointerdown", e => {
+  const fg = e.target.closest(".swipe-fg");
+  if (openFg && !openFg.isConnected) openFg=null;
+  if (openFg && fg!==openFg && !e.target.closest(".swipe-acts")){ closeFg(openFg); if(!fg){ swallow=true; setTimeout(()=>swallow=false,400);} }
+  if (!fg) return;
+  sw = {fg, x0:e.clientX, y0:e.clientY, base:fg._x||0, drag:false, W:fg.previousElementSibling.offsetWidth};
+});
+document.addEventListener("pointermove", e => {
+  if (!sw) return; const dx=e.clientX-sw.x0, dy=e.clientY-sw.y0;
+  if (!sw.drag){ if (Math.abs(dx)>8 && Math.abs(dx)>Math.abs(dy)*1.2){ sw.drag=true; sw.fg.style.transition="none"; sw.fg.parentElement.classList.add("dragging"); } else if (Math.abs(dy)>10){ sw=null; return; } else return; }
+  let x = sw.base+dx; if (x>0) x = x*0.25; if (x < -sw.W) x = -sw.W + (x+sw.W)*0.35;
+  sw.fg.style.transform=`translateX(${x}px)`; sw.fg._x=x;
+});
+const endSwipe = () => {
+  if (!sw) return; const {fg,drag,W}=sw; sw=null; fg.parentElement.classList.remove("dragging");
+  if (!drag) return;
+  swallow=true; setTimeout(()=>swallow=false,400);
+  if ((fg._x||0) < -W*0.4){ fg.style.transition="transform .4s cubic-bezier(.32,1.2,.4,1)"; fg.style.transform=`translateX(${-W}px)`; fg._x=-W; fg.parentElement.classList.add("is-open"); if(openFg&&openFg!==fg) closeFg(openFg); openFg=fg; }
+  else closeFg(fg);
+};
+document.addEventListener("pointerup", endSwipe); document.addEventListener("pointercancel", endSwipe);
+window.agreedSwipeOpen = i => { const fg=document.querySelectorAll(".swipe-fg")[i||0]; const W=fg.previousElementSibling.offsetWidth; fg.style.transform=`translateX(${-W}px)`; fg._x=-W; fg.parentElement.classList.add("is-open"); openFg=fg; };
+// pull down to close sheets
+let ps=null;
+const sheetNode = sheetEl();
+sheetNode.addEventListener("touchstart", e => { ps = sheetNode.scrollTop<=0 ? {y0:e.touches[0].clientY, dy:0, t0:Date.now()} : null; }, {passive:true});
+sheetNode.addEventListener("touchmove", e => {
+  if (!ps) return; const dy = e.touches[0].clientY - ps.y0;
+  if (dy<=0 && !ps.pulling){ ps=null; return; }
+  if (e.cancelable) e.preventDefault();
+  ps.pulling=true; ps.dy=Math.max(0,dy); sheetNode.style.transition="none"; sheetNode.style.transform=`translateY(${ps.dy}px)`;
+  scrim().style.opacity = String(Math.max(0.15, 1 - ps.dy/500));
+}, {passive:false});
+sheetNode.addEventListener("touchend", () => {
+  if (!ps) return; const {dy,t0,pulling}=ps; ps=null; if(!pulling) return;
+  sheetNode.style.transition=""; const fast = dy/(Date.now()-t0) > 0.6;
+  if (dy>120 || (fast && dy>40)) closeSheet(); else { sheetNode.style.transform=""; scrim().style.opacity=""; }
+});
+window.agreedPull = dy => { sheetNode.style.transition="none"; sheetNode.style.transform=`translateY(${dy}px)`; scrim().style.opacity=String(Math.max(.15,1-dy/500)); };
+// manual form live inputs
+document.addEventListener("input", e => {
+  if (!F) return;
+  if (e.target.id==="f-name"){ F.name=e.target.value; if(F.preset&&F.preset.name!==F.name) F.preset=null; refreshForm(); }
+  if (e.target.id==="f-price"){ F.price=e.target.value.replace(/[^0-9.]/g,""); refreshForm(); }
+  if (e.target.id==="f-date"){ F.date=e.target.value; refreshForm(); }
+});
 window.addEventListener("hashchange", render);
 matchMedia("(prefers-color-scheme: light)").addEventListener?.("change", applyTheme);
 applyTheme(); render(); onboarding();
