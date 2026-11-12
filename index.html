@@ -7,6 +7,16 @@
 (function(){
   var TARGET=412;
   function coarse(){try{return window.matchMedia("(pointer:coarse)").matches}catch(e){return "ontouchstart" in window}}
+  function suggestsPhone(){
+    var dpr=window.devicePixelRatio||1;
+    var phys=(screen.width||0)*dpr;
+    // Physical short side in the phone range, including a broken WebView
+    // that reports CSS width already in physical pixels (e.g. 1080, dpr 1).
+    if(phys>=600 && phys<=1600) return true;
+    if((screen.width||0)>0 && screen.width<=500) return true;
+    return false;
+  }
+  function shouldFit(){ return coarse() && window.innerWidth>600 && suggestsPhone(); }
   function setMeta(){
     var m=document.querySelector('meta[name="viewport"]');
     if(!m){m=document.createElement("meta");m.setAttribute("name","viewport");document.head.appendChild(m)}
@@ -14,17 +24,24 @@
   }
   function forceScale(){
     var vw=window.innerWidth, vh=window.innerHeight;
-    if(vw<=600) return;
+    if(vw<=600) return false;
     var scale=vw/TARGET;
-    var s=document.getElementById("agreed-fit");
-    if(!s){s=document.createElement("style");s.id="agreed-fit";document.head.appendChild(s)}
-    s.textContent="html{width:"+TARGET+"px!important;height:"+Math.round(vh/scale)+"px!important;zoom:"+scale+"}";
+    var app=document.getElementById("app");
+    if(!app) return false;
+    app.style.width=TARGET+"px";
+    app.style.height=Math.round(vh/scale)+"px";
+    app.style.zoom=String(scale);
+    return true;
+  }
+  function afterMeta(){
+    if(!shouldFit()) return;
+    if(forceScale()) return;
+    document.addEventListener("DOMContentLoaded", function(){ if(shouldFit()) forceScale(); });
   }
   function fit(){
-    if(!coarse()) return;
-    if(window.innerWidth<=600) return;
+    if(!shouldFit()) return;
     setMeta();
-    requestAnimationFrame(function(){ if(coarse() && window.innerWidth>600) forceScale(); });
+    requestAnimationFrame(afterMeta);
   }
   fit();
   window.addEventListener("resize",fit,{passive:true});
