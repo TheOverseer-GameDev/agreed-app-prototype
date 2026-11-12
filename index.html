@@ -3,6 +3,34 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<script>
+(function(){
+  var TARGET=412;
+  function coarse(){try{return window.matchMedia("(pointer:coarse)").matches}catch(e){return "ontouchstart" in window}}
+  function setMeta(){
+    var m=document.querySelector('meta[name="viewport"]');
+    if(!m){m=document.createElement("meta");m.setAttribute("name","viewport");document.head.appendChild(m)}
+    m.setAttribute("content","width="+TARGET+", viewport-fit=cover");
+  }
+  function forceScale(){
+    var vw=window.innerWidth, vh=window.innerHeight;
+    if(vw<=600) return;
+    var scale=vw/TARGET;
+    var s=document.getElementById("agreed-fit");
+    if(!s){s=document.createElement("style");s.id="agreed-fit";document.head.appendChild(s)}
+    s.textContent="html{width:"+TARGET+"px!important;height:"+Math.round(vh/scale)+"px!important;zoom:"+scale+"}";
+  }
+  function fit(){
+    if(!coarse()) return;
+    if(window.innerWidth<=600) return;
+    setMeta();
+    requestAnimationFrame(function(){ if(coarse() && window.innerWidth>600) forceScale(); });
+  }
+  fit();
+  window.addEventListener("resize",fit,{passive:true});
+  window.addEventListener("orientationchange",fit,{passive:true});
+})();
+</script>
 <meta name="theme-color" content="#06080F">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
