@@ -239,6 +239,7 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 .btn-primary{background:var(--grad);color:#fff;box-shadow:0 12px 24px -12px rgba(95,90,255,.9),inset 0 1px 0 rgba(255,255,255,.3)}
 .btn-ghost{background:var(--surface-2);border:1px solid var(--line)}
 .btn-danger{background:var(--red-soft);color:var(--red)}
+.btn[hidden]{display:none!important}
 .chart{width:100%;height:110px;display:block}
 .src{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:var(--r-md);background:var(--surface-2);font-size:13.5px;color:var(--text-2);border:1px solid var(--line)}
 .src svg{width:18px;height:18px;color:var(--accent);flex:none}
@@ -383,3 +384,41 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:poin
 .cp.on{background:var(--text);color:var(--bg);border-color:transparent}
 .field .toggle{margin-left:auto}
 .btn:disabled{opacity:.4;pointer-events:none;filter:saturate(.6)}
+
+/* ---- v0.3 edit / delete confirm / undo toast ---- */
+.toast.undo{pointer-events:auto;gap:10px}
+.toast button{color:#8F7BFF;font-weight:720;padding:4px 2px 4px 8px}
+:root[data-theme="light"] .toast button{color:#5B4BFF}
+.delask{display:grid;gap:10px;margin-top:4px;padding:14px;border-radius:var(--r-md);background:var(--red-soft);border:1px solid rgba(255,92,122,.22);animation:rise .35s var(--ease)}
+.delask p{margin:0 0 6px;font-size:14.5px;line-height:1.45;text-align:center}
+@media (prefers-reduced-motion:reduce){.delask{animation:none}}
+
+/* ---- v0.3 search + renewals calendar ---- */
+.sbox{display:flex;align-items:center;gap:10px;padding:0 14px;height:48px;border-radius:16px;background:var(--surface);border:1px solid var(--line);margin-bottom:16px;box-shadow:var(--shadow)}
+.sbox>svg{width:18px;height:18px;color:var(--text-3);flex:none}
+.sbox input{flex:1;min-width:0;background:none;border:0;outline:0;color:var(--text);font:inherit;font-size:16px;height:100%}
+.sbox input::placeholder{color:var(--text-3)}
+.sclr{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);color:var(--text-3);flex:none}
+.sclr.off{visibility:hidden}
+.sclr svg{width:14px;height:14px}
+.cal{padding:14px 10px 16px;border-radius:var(--r-lg);background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:0 4px}
+.cal-nav button{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);border:1px solid var(--line)}
+.cal-nav button svg{width:18px;height:18px}
+.cal-title{font-size:17px;font-weight:700;letter-spacing:-.02em}
+.cdow{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));text-align:center;font-size:11px;font-weight:650;letter-spacing:.06em;color:var(--text-3);text-transform:uppercase;margin-bottom:4px}
+.cdow span{padding:6px 0}
+.cgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px}
+.dcell{min-width:0;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:12px;padding:2px 0}
+.dcell .dn{font-size:13.5px;font-weight:600;line-height:1}
+.dcell.empty{pointer-events:none}
+.dcell.today .dn{color:var(--accent)}
+.dcell.sel{background:var(--grad);color:#fff}
+.dcell.sel .dn{color:#fff;font-weight:720}
+.dcell.has:not(.sel){background:var(--surface-2)}
+.ddots{display:flex;gap:2px;height:5px;align-items:center;justify-content:center}
+.ddots i{width:5px;height:5px;border-radius:50%;background:var(--accent);flex:none}
+.ddots i.d-amber{background:var(--amber)}
+.ddots i.d-violet{background:#A592FF}
+.ddots i.d-green{background:var(--green)}
+.dcell.sel .ddots i{background:#fff;opacity:.9}
