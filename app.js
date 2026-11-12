@@ -169,7 +169,7 @@ function Contracts(){
   const flags = S.contracts.reduce((a,x)=>a+x.red.length,0);
   const next = S.contracts.filter(c=>c.cancelBy).sort((a,b)=>a.cancelBy-b.cancelBy)[0];
   return `<section class="screen stagger" data-screen="contracts">
-  ${header("Contracts","Leases, plans & policies")}
+  ${header("Agreements","Leases, plans & policies")}
   <div class="strip"><div class="stat"><b class="num">${money(m).replace(/\.\d\d$/,"")}</b><span>per month</span></div><div class="stat"><b class="num" style="color:var(--red)">${flags}</b><span>red flags</span></div><div class="stat"><b class="num">${next?next.cancelBy+"d":"—"}</b><span>next deadline</span></div></div>
   ${!S.contracts.length?emptyState("file","No contracts yet","Snap a photo of a lease, phone plan or insurance policy. We'll explain the fine print and flag anything risky.",`<button class="btn btn-primary e-cta" data-sheet="scan">${ic("camera")}Scan a contract</button>`):""}
   ${S.contracts.map(c=>{ const pct = c.end? Math.min(100,Math.round(-c.start/(c.end-c.start)*100)) : null;
@@ -402,7 +402,7 @@ let searchQ="", searchKind="All", from="home";
 const hay = it => [it.name,it.plan,it.cat,it.store,it.srcText,it.note].filter(Boolean).join(" ").toLowerCase();
 function searchResults(){
   const q=searchQ.trim().toLowerCase();
-  const groups=[{k:"Subscriptions",items:S.subs},{k:"Contracts",items:S.contracts},{k:"Warranties",items:S.stuff}]
+  const groups=[{k:"Subscriptions",items:S.subs},{k:"Agreements",items:S.contracts},{k:"Warranties",items:S.stuff}]
     .filter(g=>searchKind==="All"||searchKind===g.k)
     .map(g=>({...g,items:q?g.items.filter(it=>hay(it).includes(q)):g.items}))
     .filter(g=>g.items.length);
@@ -413,10 +413,10 @@ function searchResults(){
 }
 function Search(){
   return `<section class="screen stagger" data-screen="search">
-  <div class="top"><button class="back" data-go="${from}">${ic("chevL")}${({home:"Home",subs:"Subs",contracts:"Contracts",stuff:"Warranties",alerts:"Alerts",add:"Add",settings:"Settings"})[from]||"Back"}</button><button class="icon-btn" data-go="calendar" aria-label="Calendar">${ic("cal")}</button></div>
+  <div class="top"><button class="back" data-go="${from}">${ic("chevL")}${({home:"Home",subs:"Subs",contracts:"Agreements",stuff:"Warranties",alerts:"Alerts",add:"Add",settings:"Settings"})[from]||"Back"}</button><button class="icon-btn" data-go="calendar" aria-label="Calendar">${ic("cal")}</button></div>
   <h1 class="title">Search</h1>
   <div class="sbox">${ic("search")}<input id="q-search" placeholder="Name, category, store…" value="${searchQ.replace(/"/g,"&quot;")}" autocomplete="off" enterkeyhint="search"><button class="sclr ${searchQ?"":"off"}" data-qclr aria-label="Clear">${ic("x")}</button></div>
-  <div class="pills">${["All","Subscriptions","Contracts","Warranties"].map(k=>`<button class="fpill ${k===searchKind?"on":""}" data-sk="${k}">${k}</button>`).join("")}</div>
+  <div class="pills">${["All","Subscriptions","Agreements","Warranties"].map(k=>`<button class="fpill ${k===searchKind?"on":""}" data-sk="${k}">${k}</button>`).join("")}</div>
   <div id="q-res">${searchResults()}</div>
   </section>`;
 }
@@ -469,7 +469,7 @@ function Calendar(){
 }
 
 const ROUTES = {home:Home,subs:Subs,contracts:Contracts,stuff:Stuff,alerts:Alerts,add:Add,settings:Settings,search:Search,calendar:Calendar};
-const TABS = [["home","home","Home"],["subs","subs","Subs"],["add","plus",""],["contracts","file","Contracts"],["stuff","shieldc","Warranties"]];
+const TABS = [["home","home","Home"],["subs","subs","Subs"],["add","plus",""],["contracts","file","Agreements"],["stuff","shieldc","Warranties"]];
 function route(){ return (location.hash.replace("#/","")||"home").split("?")[0]; }
 function render(){
   const r = ROUTES[route()] ? route() : "home";
