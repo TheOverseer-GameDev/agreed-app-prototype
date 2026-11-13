@@ -474,6 +474,7 @@ button.profile{width:100%}
 .redeemask p{margin:0 0 6px;font-size:14.5px;line-height:1.45;text-align:center}
 @media (prefers-reduced-motion:reduce){.redeemask{animation:none}}
 .rled{pointer-events:none}
+.rled button,.rled [data-savecard],.rled [data-rconfirm]{pointer-events:auto}
 .lv-card{padding:8px 16px 12px}
 .lv{display:flex;gap:12px;padding:10px 0}
 .lv-rail{width:16px;flex:none;display:flex;flex-direction:column;align-items:center}
@@ -511,3 +512,20 @@ button.profile{width:100%}
 .bk-provider h2{font-size:24px;font-weight:750;letter-spacing:-.03em;line-height:1.2;margin:8px 0 12px}
 .bk-provider p{color:var(--text-2);font-size:15px;line-height:1.5;margin:0 0 10px;text-align:left}
 .bk-provider .actions{margin-top:18px}
+
+/* legal drafts + save card + receipts + pending */
+#app.legal-page{overflow-y:auto;overflow-x:hidden;height:100%;max-width:40rem}
+.legal{padding:calc(env(safe-area-inset-top) + 24px) 22px calc(env(safe-area-inset-bottom) + 40px)}
+.legal-draft{background:var(--amber-soft);color:var(--amber);border:1px solid rgba(255,181,71,.28);border-radius:var(--r-md);padding:12px 14px;font-weight:650;font-size:13.5px;line-height:1.45;margin:0 0 22px}
+.legal h1{font-size:32px;font-weight:750;letter-spacing:-.035em;line-height:1.15;margin:8px 0 10px}
+.legal h2{font-size:18px;font-weight:700;letter-spacing:-.02em;margin:28px 0 8px}
+.legal p{color:var(--text-2);margin:0 0 12px}
+.legal a{color:#8F7BFF}
+.legal-links a{color:var(--text-2);text-decoration:underline;text-underline-offset:3px}
+.legal-links{line-height:1.6}
+.savecard-wrap{border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--line);margin:4px 0 16px;background:#06080F}
+#savecard{display:block;width:100%;height:auto}
+.paste{width:100%;min-height:128px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface);color:var(--text);font:inherit;padding:12px 14px;resize:vertical;line-height:1.45}
+.paste:focus{outline:none;border-color:var(--line-2)}
+.addr.coming{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+.rled.is-pending{align-items:flex-start}
