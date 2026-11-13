@@ -51,8 +51,11 @@ const save = () => localStorage.setItem(KEY, JSON.stringify(S));
 
 const $ = s => document.querySelector(s);
 const app = $("#app");
-const cad = new Intl.NumberFormat("en-CA",{style:"currency",currency:"CAD"});
-const money = n => cad.format(n).replace("CA","");
+const money = n => {
+  const usd=S.locale&&S.locale.currency==="USD";
+  return new Intl.NumberFormat(usd?"en-US":"en-CA",{style:"currency",currency:usd?"USD":"CAD"}).format(n).replace(/^CA/,"");
+};
+const localeLabel=()=> (S.locale&&S.locale.country==="US")?"United States · USD":"Canada · CAD";
 const today = new Date(); today.setHours(0,0,0,0);
 const dOff = n => new Date(today.getTime() + n*864e5);
 const fdate = (n, opt={month:"short",day:"numeric"}) => dOff(n).toLocaleDateString("en-CA",opt);
@@ -75,18 +78,18 @@ const totals = () => {
 };
 const GROUPCOL = {"Home":"#B9A8FF","Streaming":"#FF7AA2","Insurance":"#FFD36E","Phone":"#6FE7EC","Fitness":"#FF9F7A","Apps & more":"#8CF0B4"};
 
-/* ---------- rewards v1 ---------- */
-const PTS_RATE=100, REDEEM_COST=600, REDEEM_YEAR_CAP=6;
+/* ---------- savings score (was rewards points) ---------- */
+const SCORE_V=2;
 const LEVELS=[
-  {id:"clear",name:"Clear",at:0,gift:0,blurb:"The app as it is, plus a running You saved total"},
-  {id:"steady",name:"Steady",at:500,gift:0,blurb:"Custom alert lead times, 1 household member, and PDF/export"},
-  {id:"anchored",name:"Anchored",at:1500,gift:1,blurb:"Terms-change watch, agreement scripts, and 1 month of Pro"},
-  {id:"assured",name:"Assured",at:3500,gift:3,blurb:"2 household members, claim checklist, and 3 months of Pro"},
-  {id:"kept",name:"Kept",at:7000,gift:12,blurb:"12 months of Pro this year, and a year-in-agreements report"}
+  {id:"clear",name:"Clear",at:0,blurb:"Every save starts here"},
+  {id:"steady",name:"Steady",at:500,blurb:"You're catching waste and keeping score"},
+  {id:"anchored",name:"Anchored",at:1500,blurb:"A solid score — the habit is sticking"},
+  {id:"assured",name:"Assured",at:3500,blurb:"Serious money back in your pocket"},
+  {id:"kept",name:"Kept",at:7000,blurb:"A standout year of agreements, watched and won"}
 ];
-const emptyRewards=()=>({lifetime:0,available:0,ledger:[],proMonths:0,proGiftedThisYear:0,levelGifts:{},cooldown:{},done:{},year:new Date().getFullYear()});
+const emptyRewards=()=>({v:SCORE_V,lifetime:0,available:0,ledger:[],proMonths:0,proGiftedThisYear:0,levelGifts:{},cooldown:{},done:{},year:new Date().getFullYear()});
 const sampleRewards=()=>({
-  lifetime:1595,available:1595,proMonths:1,proGiftedThisYear:0,year:new Date().getFullYear(),
+  v:SCORE_V,lifetime:1595,available:1595,proMonths:0,proGiftedThisYear:0,year:new Date().getFullYear(),
   levelGifts:{anchored:true},
   cooldown:{"adobe creative cloud":-84,"the athletic":-62},
   done:{"cancel:adobe":1,"cancel:athletic":1,"deadline:oldlease":1,"deadline:oldreturn":1,"warranty:dyson":1,"warranty:iphone":1,"review:rogers":1,"review:goodlife":1,"review:lease":1,"setup":1},
@@ -111,19 +114,140 @@ function migrateRewards(){
     save();
   }
   const r=S.rewards, e=emptyRewards();
-  for(const k of Object.keys(e)) if(r[k]==null) r[k]=e[k];
-  if(r.year!==new Date().getFullYear()){ r.year=new Date().getFullYear(); r.proGiftedThisYear=0; }
+  const from=r.v||0;
+  for(const k of Object.keys(e)) if(k!=="v" && r[k]==null) r[k]=e[k];
+  if(from<SCORE_V){
+    // Points used to be spendable for Pro months. The score is lifetime earned
+    // (redemptions never reduced lifetime). Align available and stop granting Pro time.
+    r.lifetime=Math.max(0,+r.lifetime||0);
+    r.available=r.lifetime;
+    r.v=SCORE_V;
+    save();
+  }
 }
 migrateRewards();
-const rSaved=()=>S.rewards.ledger.reduce((a,x)=>a+(x.saved||0),0);
+
+/* ---------- bank connection (demo; no real aggregator) ---------- */
+const BANK_V=1;
+const BANK_FEATS=[
+  {id:"findSubs",label:"Find subscriptions automatically"},
+  {id:"hikeAlerts",label:"Price-hike alerts"},
+  {id:"renewalTrial",label:"Renewal & trial detection"},
+  {id:"insights",label:"Spending insights"}
+];
+const DEMO_ACCOUNTS={
+  CA:[
+    {id:"rbc-cheq",name:"RBC Chequing",mask:"••4821",bg:"#005DAA",mono:"RBC",kind:"bank"},
+    {id:"td-visa",name:"TD Visa",mask:"••1094",bg:"#008A3E",mono:"TD",kind:"card"}
+  ],
+  US:[
+    {id:"chase-chk",name:"Chase Checking",mask:"••4821",bg:"#117ACA",mono:"CH",kind:"bank"},
+    {id:"amex-card",name:"Amex",mask:"••1094",bg:"#006FCF",mono:"AX",kind:"card"}
+  ]
+};
+const emptyBank=()=>({v:BANK_V,demo:true,accounts:[],features:{findSubs:true,hikeAlerts:true,renewalTrial:true,insights:true},paused:false,featureSnap:null});
+const emptyLocale=()=>({country:"CA",currency:"CAD"});
+function migrateLocale(){
+  if(!S.locale){ S.locale=emptyLocale(); save(); }
+  if(!S.locale.country) S.locale.country="CA";
+  if(!S.locale.currency) S.locale.currency=S.locale.country==="US"?"USD":"CAD";
+}
+function migrateBank(){
+  if(!S.bank){
+    const n=((S.subs||[]).length+(S.contracts||[]).length+(S.stuff||[]).length);
+    const seeded=(S.subs||[]).some(x=>x.id==="netflix")&&(S.contracts||[]).some(x=>x.id==="bell")&&n>=18;
+    S.bank=emptyBank();
+    if(seeded) S.bank.accounts=DEMO_ACCOUNTS.CA.map(a=>({...a}));
+    save();
+  }
+  const b=S.bank, e=emptyBank();
+  if(!Array.isArray(b.accounts)) b.accounts=[];
+  if(!b.features) b.features={...e.features};
+  for(const k of Object.keys(e.features)) if(b.features[k]==null) b.features[k]=e.features[k];
+  if(b.paused==null) b.paused=false;
+  if(b.demo==null) b.demo=true;
+  if((b.v||0)<BANK_V){ b.v=BANK_V; save(); }
+}
+migrateLocale();
+migrateBank();
+function bankConnected(){ return !!(S.bank&&S.bank.accounts&&S.bank.accounts.length); }
+function bankFeatOn(id){ return !!(S.bank&&!S.bank.paused&&S.bank.features[id]); }
+let bankView="manage"; // manage | provider | disconnect
+function bankSeeNever(){
+  const yes=ic("checkc"), no=ic("lock");
+  return `<div class="onb-split">
+    <div class="onb-split-col"><h3>What we can see</h3><ul>
+      <li>${yes}<span>Merchant name</span></li>
+      <li>${yes}<span>Amount</span></li>
+      <li>${yes}<span>Date</span></li>
+      <li>${yes}<span>If a charge is recurring</span></li>
+    </ul></div>
+    <div class="onb-split-col never"><h3>What we can never do</h3><ul>
+      <li>${no}<span>See your bank password</span></li>
+      <li>${no}<span>Store your bank password</span></li>
+      <li>${no}<span>Move money</span></li>
+      <li>${no}<span>Make payments</span></li>
+    </ul></div>
+  </div>`;
+}
+function connectManage(){
+  const b=S.bank, n=b.accounts.length;
+  const feats=BANK_FEATS.map(f=>`<div class="set-row"><div class="si" style="background:var(--grad)">${ic("checkc")}</div><div class="lbl">${f.label}</div><button class="toggle ${bankFeatOn(f.id)?"on":""}" data-bkfeat="${f.id}" aria-label="${f.label}"></button></div>`).join("");
+  const accts=n?`<div class="h3">Connected accounts</div><div class="list">${b.accounts.map(a=>`<div class="set-row"><div class="mono sm" style="background:${a.bg};font-size:${a.mono.length>2?"10.5px":"13px"}">${a.mono}</div><div class="row-main"><div class="row-title">${a.name}</div><div class="row-sub">${a.mask}</div></div><span class="pill p-green">Synced</span></div>`).join("")}</div>`:"";
+  const paused=b.paused?`<div class="src" style="margin:0 0 14px">${ic("pause")}Paused — we aren't reading your accounts.</div>`:"";
+  return `<div class="sheet-head" data-bkconnectsheet><div class="mono lg" style="background:var(--grad)"><span style="width:46%;height:46%;display:grid">${ic("bank")}</span></div><div class="eyebrow" style="display:flex;align-items:center;gap:8px;justify-content:center">Bank &amp; cards <span class="pill p-violet">Demo</span></div><h2 style="margin:8px 0 6px">Connect a bank or card</h2><p class="muted" style="max-width:320px">Optional and read-only. Works with banks and cards in Canada and the US. Your bank login goes straight to our secure provider, never to us.</p></div>
+  <p class="muted" style="margin:0 0 14px">You sign in on your bank's own screen. We never see or store your password, and we can't move money or make payments. We only read payment details — merchant, amount, date, and whether it's recurring — to find subscriptions and agreements. Every feature can be switched on or off. Disconnect anytime and we delete that data. You can always add things yourself.</p>
+  ${bankSeeNever()}
+  ${paused}
+  ${accts}
+  <div class="actions" style="margin-top:16px"><button class="btn btn-primary" data-bkprovider>${ic("lock")}${n?"Add another bank or card":"Connect bank or card"}</button></div>
+  ${n?`<div class="h3">Features</div><div class="list">${feats}</div>
+  <div class="actions" style="margin-top:16px"><button class="btn btn-ghost" data-bkpause>${ic("pause")}${b.paused?"Resume all":"Pause all"}</button><button class="btn btn-danger" data-bkdisc>${ic("trash")}Disconnect &amp; delete data</button></div>
+  <p class="muted small" style="text-align:center;margin:14px 0 4px">Demo only — no real bank is contacted.</p>`:`<p class="muted small" style="text-align:center;margin:14px 0 4px">Manual entry is always available. Demo only — no real bank is contacted.</p>`}`;
+}
+function connectProvider(){
+  return `<div class="bk-provider" data-bkproviderstep>
+    <div class="bk-provider-mark">${ic("lock")}</div>
+    <div class="eyebrow" style="display:flex;align-items:center;justify-content:center;gap:8px">Secure connection <span class="pill p-violet">Demo</span></div>
+    <h2>Secure connection provider</h2>
+    <p>Your bank login goes straight to our secure provider, never to us. You'll sign in on your bank's own screen. Agreed never sees or stores your password, and can't move money.</p>
+    <p class="muted">This demo stands in for a trusted, bank-grade provider. It isn't a real login, and we aren't claiming a partnership with any named provider.</p>
+    <p class="muted">Banks and cards in Canada and the US.</p>
+    <div class="actions"><button class="btn btn-primary" data-bkcontinue>Continue (demo)</button><button class="btn btn-ghost" data-bkback>Cancel</button></div>
+  </div>`;
+}
+function connectDisconnect(){
+  return `<div class="sheet-head"><h2>Disconnect &amp; delete data?</h2><p class="muted">We'll delete payment details pulled from your bank or card. Items you added yourself stay. You can connect again later.</p></div>
+  <div class="actions"><button class="btn btn-danger" data-bkdiscyes>${ic("trash")}Disconnect &amp; delete</button><button class="btn btn-ghost" data-bkback>Keep connected</button></div>`;
+}
+function connectSheet(){
+  if(bankView==="provider") return connectProvider();
+  if(bankView==="disconnect") return connectDisconnect();
+  return connectManage();
+}
+function refreshConnect(){ if(!$("[data-bkconnectsheet], [data-bkproviderstep]")) return; const sc=sheetEl().scrollTop; sheetEl().innerHTML=SHEET_CHROME()+connectSheet(); sheetEl().scrollTop=sc; }
+function openConnect(view){ bankView=view||"manage"; openSheet(connectSheet()); }
+function localeSheet(){
+  const ca=!(S.locale&&S.locale.country==="US");
+  const row=(id,title,sub)=>`<button type="button" class="bank" data-locale="${id}"><div class="row-main"><div class="row-title">${title}</div><div class="row-sub">${sub}</div></div>${(id==="US"?!ca:ca)?`<span class="pill p-green">Selected</span>`:""}</button>`;
+  return `<div class="sheet-head"><h2>Country &amp; currency</h2><div class="muted">Choose where you bank. Amounts are shown in that currency — we don't convert them.</div></div>
+  <div class="list">${row("CA","Canada","Canadian dollars (CAD)")}${row("US","United States","US dollars (USD)")}</div>`;
+}
+function openLocale(){ openSheet(localeSheet()); }
+window.agreedBank=()=>S.bank;
+window.agreedLocale=()=>S.locale;
+window.agreedConnect=openConnect;
+
+const rSaved=()=>S.rewards.ledger.reduce((a,x)=>a+(+(x.saved)||0),0);
+const rScore=()=>S.rewards.lifetime;
 const rLevel=()=>{ let c=LEVELS[0]; for(const L of LEVELS) if(S.rewards.lifetime>=L.at) c=L; return c; };
-const ptsMoney=n=>`${Number(n).toLocaleString("en-CA")} pts (${money(n/PTS_RATE)})`;
+const scoreLabel=n=>Number(n).toLocaleString("en-CA");
 const merch=s=>(s||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
 const rCan=key=>!S.rewards.done[key];
 function rCool(name){ const d=S.rewards.cooldown[merch(name)]; return d!=null && d<=0 && -d<365; }
 function grantLevelGifts(){
   const r=S.rewards; let hit=null;
-  for(const L of LEVELS){ if(L.gift && r.lifetime>=L.at && !r.levelGifts[L.id]){ r.levelGifts[L.id]=true; r.proMonths+=L.gift; hit=L; } }
+  for(const L of LEVELS){ if(r.lifetime>=L.at && !r.levelGifts[L.id]){ r.levelGifts[L.id]=true; hit=L; } }
   return hit;
 }
 function rEarn({type,key,title,pts,saved=0,merchant,silent}){
@@ -133,13 +257,13 @@ function rEarn({type,key,title,pts,saved=0,merchant,silent}){
   pts=Math.max(0,Math.round(pts));
   if(!pts) return 0;
   r.ledger.unshift({id:"rw"+Date.now(),type,key,title,pts,saved:+(+saved).toFixed(2),when:0});
-  r.lifetime+=pts; r.available+=pts;
+  r.lifetime+=pts; r.available=r.lifetime;
   if(key) r.done[key]=1;
   if(merchant) r.cooldown[merch(merchant)]=0;
   const leveled=grantLevelGifts();
   save();
   if(!silent){
-    const bits=[`+${pts.toLocaleString("en-CA")} pts`];
+    const bits=[`+${scoreLabel(pts)} to your score`];
     if(saved) bits.push(`${money(saved)} saved`);
     if(leveled) bits.push("Level "+leveled.name);
     toast(bits.join(" · "));
@@ -161,7 +285,7 @@ function rHike(it,saved,silent){
 function rWarrantyLog(it){ if(it&&rCan("warranty:"+it.id)) rEarn({type:"warranty",key:"warranty:"+it.id,title:`Logged ${it.name} warranty`,pts:100,silent:true}); }
 function rWarrantyUse(it){
   if(!it||!rCan("warrantyuse:"+it.id)) return 0;
-  const already=S.rewards.ledger.filter(x=>x.key==="warranty:"+it.id||x.key==="warrantyuse:"+it.id).reduce((a,x)=>a+x.pts,0);
+  const already=S.rewards.ledger.filter(x=>x.key==="warranty:"+it.id||x.key==="warrantyuse:"+it.id).reduce((a,x)=>a+(x.pts||0),0);
   const pts=Math.min(200,Math.max(0,500-already));
   if(!pts) return 0;
   return rEarn({type:"warranty",key:"warrantyuse:"+it.id,title:it.ret?`Started a ${it.name} return`:`Started a ${it.name} claim`,pts});
@@ -173,43 +297,50 @@ function rNegotiate(it,newPrice){
   const saved=Math.max(0,Math.round((it.price-newPrice)*12*100)/100);
   return rEarn({type:"negotiate",key:"negotiate:"+it.id,title:`Negotiated a new ${it.name} rate`,pts:Math.min(800,300+Math.round(saved)),saved,silent:true});
 }
-function rRedeem(){
-  const r=S.rewards;
-  if(r.available<REDEEM_COST) return "Need 600 pts ($6.00) to redeem a month of Pro.";
-  if(r.proGiftedThisYear>=REDEEM_YEAR_CAP) return "You've redeemed the 6-month maximum for this year.";
-  r.available-=REDEEM_COST; r.proMonths+=1; r.proGiftedThisYear+=1;
-  r.ledger.unshift({id:"rw"+Date.now(),type:"redeem",title:"Redeemed 1 month of Pro",pts:-REDEEM_COST,saved:0,when:0});
-  save(); toast("1 month of Pro added"); return true;
+const RICO={cancel:"x",hike:"trend",deadline:"clock",warranty:"shield",negotiate:"msg",review:"book",setup:"home"};
+const PRO_BENEFITS=[
+  "Unlimited agreements",
+  "Alerts before price hikes and promo ends",
+  "Plain-English fine print and a terms-change watch",
+  "Cancel and negotiate scripts",
+  "Renewal calendar and smart reminders, so nothing auto-renews by surprise",
+  "Exports and a yearly report"
+];
+function proBenefits(){
+  return `<ul class="onb-benefits">${PRO_BENEFITS.map(b=>`<li>${ic("checkc")}<span>${b}</span></li>`).join("")}</ul>`;
 }
-const RICO={cancel:"x",hike:"trend",deadline:"clock",warranty:"shield",negotiate:"msg",review:"book",setup:"home",redeem:"spark"};
-let redeemAsk=false;
 function rewardsBody(){
-  const r=S.rewards, life=r.lifetime, avail=r.available, saved=rSaved(), L=rLevel();
+  const r=S.rewards, life=rScore(), saved=rSaved(), L=rLevel();
   const [w,cents]=saved.toFixed(2).split(".");
   const next=LEVELS.find(x=>x.at>life);
-  const ledger=[...r.ledger].sort((a,b)=>b.when-a.when);
-  const pro = r.proMonths?`${r.proMonths} month${r.proMonths===1?"":"s"} of Pro`:"No Pro months yet";
-  const canRedeem=avail>=REDEEM_COST && r.proGiftedThisYear<REDEEM_YEAR_CAP;
-  const rows=ledger.map(e=>`<div class="row rled"><div class="aico" style="background:var(--green-soft);color:var(--green)">${ic(RICO[e.type]||"spark")}</div><div class="row-main"><div class="row-title">${e.title}</div><div class="row-sub">${e.when===0?"Today":ago(e.when)}${e.saved?` · ${money(e.saved)} saved`:""}</div></div><div class="row-end"><div class="row-amt num" style="color:${e.pts<0?"var(--text-2)":"var(--green)"}">${e.pts>0?"+":""}${e.pts.toLocaleString("en-CA")}</div><div class="row-cyc">pts</div></div></div>`).join("");
+  const ledger=[...r.ledger].filter(e=>e.type!=="redeem").sort((a,b)=>b.when-a.when);
+  const rows=ledger.map(e=>`<div class="row rled"><div class="aico" style="background:var(--green-soft);color:var(--green)">${ic(RICO[e.type]||"spark")}</div><div class="row-main"><div class="row-title">${e.title}</div><div class="row-sub">${e.when===0?"Today":ago(e.when)}${e.saved?` · ${money(e.saved)} saved`:""}</div></div><div class="row-end"><div class="row-amt num" style="color:var(--green)">+${scoreLabel(e.pts||0)}</div><div class="row-cyc">score</div></div></div>`).join("");
   const lv=LEVELS.map((lv,i)=>{
     const on=L.id===lv.id, got=life>=lv.at, last=i===LEVELS.length-1;
-    return `<div class="lv ${on?"on":got?"got":""}"><div class="lv-rail"><i></i>${last?"":"<b></b>"}</div><div class="lv-body"><div class="lv-top"><div class="lv-name">${lv.name}</div><div class="lv-at num">${lv.at.toLocaleString("en-CA")} pts${on?` · you`:got?" · reached":""}</div></div><div class="lv-blurb">${lv.blurb}</div></div></div>`;
+    return `<div class="lv ${on?"on":got?"got":""}"><div class="lv-rail"><i></i>${last?"":"<b></b>"}</div><div class="lv-body"><div class="lv-top"><div class="lv-name">${lv.name}</div><div class="lv-at num">${scoreLabel(lv.at)}${on?` · you`:got?" · reached":""}</div></div><div class="lv-blurb">${lv.blurb}</div></div></div>`;
   }).join("");
-  return `<div class="sheet-head saved-head"><div class="mono lg" style="background:linear-gradient(145deg,#2ED39A,#0b8a5e)"><span style="width:46%;height:46%;display:grid">${ic("dollar")}</span></div><div class="eyebrow" style="color:var(--green);opacity:.9">You saved</div><div class="saved-amt num"><span class="cur">$</span><span id="saved-count" data-to="${saved}">${Number(w).toLocaleString("en-CA")}</span><span class="cents">.${cents}</span></div><div class="muted" style="max-width:300px">Money back in your pocket. Points are a thank-you on top, always at 100 pts = $1.</div></div>
-  <div class="card pad saved-stat"><div class="saved-lvl">Level ${L.name}</div><div class="muted">${life.toLocaleString("en-CA")} earned · ${avail.toLocaleString("en-CA")} available</div><div class="saved-pts num">${ptsMoney(avail)}</div><div class="muted small" style="margin-top:8px">${pro}${next?` · ${ (next.at-life).toLocaleString("en-CA")} pts to ${next.name}`:""}</div></div>
-  ${redeemAsk?`<div class="redeemask"><p>Redeem <b>600 pts ($6.00)</b> for 1 month of Pro? Your level stays the same, and points don't expire if you wait.</p><button class="btn btn-primary" data-redeemyes>${ic("spark")}Redeem 1 month</button><button class="btn btn-ghost" data-redeemno>Not now</button></div>`
-   :`<div class="actions" style="margin-top:16px"><button class="btn ${canRedeem?"btn-primary":"btn-ghost"}" data-redeem ${canRedeem?"":"disabled"}>${ic("spark")}Redeem 1 month of Pro</button></div><p class="muted small" style="text-align:center;margin:8px 0 0">600 pts = $6.00 · your level does not drop</p>`}
+  return `<div class="sheet-head saved-head"><div class="mono lg" style="background:linear-gradient(145deg,#2ED39A,#0b8a5e)"><span style="width:46%;height:46%;display:grid">${ic("dollar")}</span></div><div class="eyebrow" style="color:var(--green);opacity:.9">Savings score <span class="pill p-green">Free</span></div><div class="saved-amt num"><span class="cur">$</span><span id="saved-count" data-to="${saved}">${Number(w).toLocaleString("en-CA")}</span><span class="cents">.${cents}</span></div><div class="muted" style="max-width:300px">Money back in your pocket. Your score is always free — it isn't a currency, and nothing is locked behind it.</div></div>
+  <div class="card pad saved-stat"><div class="saved-lvl">Level ${L.name}</div><div class="muted">Savings score</div><div class="saved-pts num">${scoreLabel(life)}</div><div class="muted small" style="margin-top:8px">${next?`${scoreLabel(next.at-life)} to ${next.name}`:"Top level"}</div></div>
   <div class="h3">Activity</div>
-  <div class="list">${rows||`<div class="row"><div class="row-main"><div class="row-title">No activity yet</div><div class="row-sub">Points are earned when you cancel, review a hike, beat a deadline or log a warranty.</div></div></div>`}</div>
+  <div class="list">${rows||`<div class="row"><div class="row-main"><div class="row-title">No activity yet</div><div class="row-sub">Your score grows when you cancel, review a hike, beat a deadline or log a warranty.</div></div></div>`}</div>
   <div class="h3">Levels</div>
   <div class="card pad lv-card">${lv}</div>
-  <p class="muted small" style="text-align:center;margin:18px 0 4px">100 pts = $1.00, always. Points don't expire. We don't take a cut of what you save.</p>`;
+  <p class="muted small" style="text-align:center;margin:18px 0 4px">Always free. We don't take a cut of what you save.</p>`;
 }
-function rewardsSheet(){ redeemAsk=false; return `<div data-rsheet>${rewardsBody()}</div>`; }
+function rewardsSheet(){ return `<div data-rsheet>${rewardsBody()}</div>`; }
 function refreshRewards(){ const n=$("[data-rsheet]"); if(!n) return; const sc=sheetEl().scrollTop; n.innerHTML=rewardsBody(); sheetEl().scrollTop=sc; }
 function openRewards(){ openSheet(rewardsSheet()); const cu=$("#saved-count"); if(cu) countUp(cu); }
+function proSheet(){
+  return `<div class="sheet-head saved-head" data-prosheet><div class="mono lg" style="background:var(--grad)"><span style="width:46%;height:46%;display:grid">${ic("checkc")}</span></div><span class="pill p-violet">Pay once</span><h2 style="margin:10px 0 8px;letter-spacing:-.03em;line-height:1.2">Pro pays for itself, usually with one cancelled subscription</h2><p class="muted" style="max-width:320px">Pay once, yours forever, no subscription.</p></div>
+  ${proBenefits()}
+  <p class="muted" style="margin:16px 0 18px">Bank and email import, too — so you aren't typing everything in.</p>
+  <p class="muted small" style="text-align:center;margin:18px 0 8px">A one-time purchase. Not a subscription. Price not set yet.</p>
+  <div class="actions"><button type="button" class="btn btn-primary" disabled aria-disabled="true">Coming soon</button></div>`;
+}
+function openPro(){ openSheet(proSheet()); }
 window.agreedSaved=openRewards;
 window.agreedRewards=()=>S.rewards;
+window.agreedPro=openPro;
 
 
 /* ---------- toast ---------- */
@@ -374,11 +505,15 @@ function Settings(){
    ${row("#FFB547","hourglass","Free trials ending",tog("trial"))}${row("#FF5C7A","trend","Price & terms changes",tog("price"))}${row("#7C5CFF","ret","Return windows",tog("ret"))}${row("#2ED39A","msg","Sunday summary",tog("digest"))}
    ${row("#4DA3FF","clock","Remind me","<span class='val'>3 days before</span>")}</div></div>
   <div class="set-group"><div class="h3">Connected</div><div class="list">
-   ${row("#005DAA","bank","RBC Chequing","<span class='pill p-green'>Synced</span>")}${row("#008A3E","bank","TD Visa","<span class='pill p-green'>Synced</span>")}${row("#FF5C8A","mail","Email forwarding","<span class='val'>On</span>")}</div></div>
+   ${row("#005DAA","bank","RBC Chequing","<span class='pill p-green'>Synced</span>")}${row("#008A3E","bank","TD Visa","<span class='pill p-green'>Synced</span>")}${row("#FF5C8A","mail","Email forwarding","<span class='val'>On</span>")}
+   <button type="button" class="set-row" data-sheet="bank"><div class="si" style="background:var(--grad)">${ic("bank")}</div><div class="lbl">Bank &amp; cards</div><span class="val">${bankConnected()?(S.bank.paused?"Paused":S.bank.accounts.length+" connected"):"Not connected"}</span></button></div></div>
   <div class="set-group"><div class="h3">Household & privacy</div><div class="list">
-   ${row("#8B5CF6","users","Share with partner",tog("share"))}${row("#111","lock","Face ID lock",tog("lock"))}${row("#2ED39A","dollar","Currency","<span class='val'>CAD $</span>")}${row("#4DA3FF","download","Export everything","<span class='val'>PDF · CSV</span>")}</div></div>
-  <div class="set-group"><div class="h3">You saved</div><div class="list">
-   <button type="button" class="set-row" data-sheet="saved"><div class="si" style="background:linear-gradient(145deg,#2ED39A,#0b8a5e)">${ic("dollar")}</div><div class="lbl">You saved</div><span class="val num">${money(rSaved())} · ${S.rewards.available.toLocaleString("en-CA")} pts</span></button></div></div>
+   ${row("#8B5CF6","users","Share with partner",tog("share"))}${row("#111","lock","Face ID lock",tog("lock"))}
+   <button type="button" class="set-row" data-sheet="locale"><div class="si" style="background:#2ED39A">${ic("dollar")}</div><div class="lbl">Country &amp; currency</div><span class="val">${localeLabel()}</span></button>
+   ${row("#4DA3FF","download","Export everything","<span class='val'>PDF · CSV</span>")}</div></div>
+  <div class="set-group"><div class="h3">Savings score</div><div class="list">
+   <button type="button" class="set-row" data-sheet="saved"><div class="si" style="background:linear-gradient(145deg,#2ED39A,#0b8a5e)">${ic("dollar")}</div><div class="lbl">Savings score</div><span class="val num">${money(rSaved())} · ${scoreLabel(rScore())}</span></button>
+   <button type="button" class="set-row" data-sheet="pro"><div class="si" style="background:var(--grad)">${ic("checkc")}</div><div class="lbl">Pro</div><span class="pill p-violet">Pay once</span></button></div></div>
   <div class="actions" style="margin-top:0"><button class="btn btn-ghost" data-fresh>${ic("spark")}Start fresh (empty app)</button><button class="btn btn-danger" data-reset>${ic("rotate")}Reset demo data</button></div>
   <p class="muted small" style="text-align:center;margin-top:16px">Agreed · prototype v0.2 · sample data only</p>
   </section>`;
@@ -558,7 +693,7 @@ function saveForm(){
     else if(F.type==="contract"){ if(F.date!==F.origDate || it.end!=null) it.end=d; }
     else it.warEnd=d;
     let extra="";
-    if(hadHike){ const saved=Math.max(0,Math.round((oldPrice-it.price)*12*100)/100); const pts=rHike(it,saved,true); if(pts) extra=` · +${pts.toLocaleString("en-CA")} pts`; }
+    if(hadHike){ const saved=Math.max(0,Math.round((oldPrice-it.price)*12*100)/100); const pts=rHike(it,saved,true); if(pts) extra=` · +${scoreLabel(pts)} to your score`; }
     save(); closeSheet(); render(); toast(`Updated ${name}`+extra); return;
   }
   const id="m"+Date.now(), base={id,...look};
@@ -590,7 +725,7 @@ function openItem(id, srcEl){
   anim.onfinish = () => { dst.style.opacity=""; ghost.remove(); setTimeout(()=>{src.style.opacity="";},120); };
 }
 window.agreedOpen = openItem;
-window.agreedSheet = k => ({manual:()=>{resetForm();openSheet(manualSheet());},found:()=>openSheet(foundSheet()),bank:()=>openSheet(bankSheet()),email:()=>openSheet(emailSheet()),scan:()=>startScan(),saved:()=>openRewards()})[k]();
+window.agreedSheet = k => ({manual:()=>{resetForm();openSheet(manualSheet());},found:()=>openSheet(foundSheet()),bank:()=>openConnect(),email:()=>openSheet(emailSheet()),scan:()=>startScan(),saved:()=>openRewards(),pro:()=>openPro(),locale:()=>openLocale()})[k]();
 function startScan(){ openSheet(scanSheet()); setTimeout(()=>{const r=$("#scanres"); if(r) r.innerHTML=scanDone(); const l=$(".scanline"); if(l) l.style.display="none";},2400); }
 function runImport(label){ openSheet(scanningSheet(label)); setTimeout(()=>{ if(sheetEl().classList.contains("show")) sheetEl().innerHTML=`<div class="grab"></div>`+foundSheet(); },1700); }
 
@@ -698,15 +833,62 @@ function onboarding(){
   if (S.onboarded) return;
   const o = document.createElement("div"); o.className="onb";
   const fc = (it,txt,pill,c,top,rot,delay) => `<div class="fcard" style="top:${top}px;rotate:${rot}deg;animation-delay:${delay}s">${mono(it,"sm")}<div class="row-main"><div class="row-title" style="font-size:14px">${it.name}</div><div style="font-size:12px;opacity:.7">${txt}</div></div><span class="pill p-${c}">${pill}</span></div>`;
-  o.innerHTML = `<div class="onb-art"><div class="orb"></div><div class="stack">${fc(S.subs[0],"Price up to $18.99","+15%","red",0,-4,.1)}${fc(S.contracts[0],"Promo ends · +$20/mo","60 days","amber",84,3,.25)}${fc(S.stuff[0],"Return window closes","3 days","violet",168,-2,.4)}</div></div>
+  const feat=(bg,icon,title,body)=>`<div class="onb-feat"><div class="oi" style="background:${bg}">${ic(icon)}</div><div><h3>${title}</h3><p>${body}</p></div></div>`;
+  o.innerHTML = `<div class="onb-art"><div class="orb"></div><div class="stack">${fc(S.subs[0],"Price up to $18.99","+15%","red",0,-4,.1)}${fc(S.contracts[0],"Promo ends · +$20/mo","60 days","amber",62,3,.25)}${fc(S.stuff[0],"Return window closes","3 days","violet",124,-2,.4)}</div></div>
   <div class="onb-body"><h1>Everything you've <em>agreed</em> to. In one place.</h1><p>Subscriptions, contracts, leases and warranties — found automatically, explained in plain English, and watched for price hikes.</p>
-  <section class="onb-offer" aria-label="Pro and Savings score">
+  <section class="onb-offer" data-onb="offer" aria-label="Pro and Savings score">
     <h2>Pay once. Own it. No subscription.</h2>
     <p>Pro is a one-time purchase. You pay once and keep it — no monthly plan, no renewal surprise.</p>
-    <div class="onb-feats">
-      <div class="onb-feat"><div class="oi" style="background:var(--grad)">${ic("checkc")}</div><div><h3>Pro <span class="pill p-violet">Pay once</span></h3><p>Bank import, alerts, and cancel-or-negotiate help, yours for good. Not a subscription.</p></div></div>
-      <div class="onb-feat"><div class="oi" style="background:linear-gradient(145deg,#2ED39A,#0b8a5e)">${ic("dollar")}</div><div><h3>Savings score <span class="pill p-green">Free</span></h3><p>Always free. A plain-English score of what you've already saved and where you can save more. No paywall.</p></div></div>
+    <div class="onb-pro" data-onb="pro">
+      <div class="onb-pro-top"><span class="pill p-violet">Pro</span></div>
+      <h3>Pro pays for itself, usually with one cancelled subscription</h3>
+      ${proBenefits()}
+      <p class="onb-forever">Pay once, yours forever, no subscription.</p>
     </div>
+    <div class="onb-feat" data-onb="scorefeat"><div class="oi" style="background:linear-gradient(145deg,#2ED39A,#0b8a5e)">${ic("dollar")}</div><div><h3>Savings score <span class="pill p-green">Free</span></h3><p>Always free. A plain-English score of what you've already saved and where you can save more. No paywall.</p></div></div>
+  </section>
+  <section class="onb-sec" data-onb="tracks" aria-label="What it tracks">
+    <h2>What it tracks</h2>
+    <p>Everything you've agreed to — not just the subscriptions you remember.</p>
+    <div class="onb-feats">
+      ${feat("var(--grad)","subs","Subscriptions","Streaming, gym, apps, and the charges that renew quietly.")}
+      ${feat("linear-gradient(145deg,#4DA3FF,#3D8BFF)","file","Contracts and leases","Phone, internet, rent, insurance, and the fine print that matters.")}
+      ${feat("linear-gradient(145deg,#2ED39A,#0b8a5e)","shield","Warranties and returns","Receipts, return windows, and protection before they lapse.")}
+    </div>
+  </section>
+  <section class="onb-sec" data-onb="features" aria-label="Key features">
+    <h2>Key features</h2>
+    <div class="onb-feats">
+      ${feat("var(--grad)","spark","Found for you","Automatic finding needs an optional, read-only connection to a bank or card in Canada or the US. Or add things yourself, any time.")}
+      ${feat("linear-gradient(145deg,#4DA3FF,#3D8BFF)","book","Plain-English fine print","We explain what you actually agreed to, and flag the risky bits.")}
+      ${feat("linear-gradient(145deg,#FFB547,#FF8A5C)","bell","Watched for you","Price hikes, promo endings, trials, and deadlines — before they catch you.")}
+      ${feat("linear-gradient(145deg,#2ED39A,#0b8a5e)","dollar","A free Savings score","What you've already saved, and where you can save more. No paywall.")}
+    </div>
+  </section>
+  <section class="onb-sec" data-onb="safe" aria-label="Connect your bank safely">
+    <div class="eyebrow">Safe &amp; private</div>
+    <h2>Connect your bank safely</h2>
+    <p>It's optional. The connection is read-only, and it goes through a trusted, bank-grade provider — the kind many apps use, such as Plaid or Flinks. We aren't claiming a partnership; that's just the type of service that handles the login.</p>
+    <p>Your bank login goes straight to our secure provider, never to us. You sign in on your bank's own screen. We never see or store your password, and we can't move money or make payments.</p>
+    <p>We only read payment details — merchant, amount, date, and whether it's recurring — to find subscriptions and agreements, for banks and cards in Canada and the US. Every feature can be switched on or off. Disconnect anytime and we delete that data. You can always add things yourself instead.</p>
+    ${bankSeeNever()}
+  </section>
+  <section class="onb-sec" data-onb="compare" aria-label="Free vs Pro">
+    <h2>Free vs Pro</h2>
+    <p>Use Agreed for free, including your Savings score. Pro is a one-time purchase when you want us to do the heavy lifting.</p>
+    <div class="onb-cmp"><div class="onb-cmp-head"><span></span><span>Free</span><span>Pro</span></div><div class="onb-cmp-row"><span>Track subscriptions, contracts, and warranties</span><span class="onb-cmp-yes">${ic("check")}</span><span class="onb-cmp-yes">${ic("check")}</span></div><div class="onb-cmp-row"><span>Savings score</span><span class="onb-cmp-yes">${ic("check")}</span><span class="onb-cmp-yes">${ic("check")}</span></div><div class="onb-cmp-row"><span>Add items yourself</span><span class="onb-cmp-yes">${ic("check")}</span><span class="onb-cmp-yes">${ic("check")}</span></div><div class="onb-cmp-row"><span>Bank and email import</span><span class="onb-cmp-no">—</span><span class="onb-cmp-yes">${ic("check")}</span></div><div class="onb-cmp-row"><span>Unlimited agreements</span><span class="onb-cmp-no">—</span><span class="onb-cmp-yes">${ic("check")}</span></div><div class="onb-cmp-row"><span>Alerts before price hikes and promo ends</span><span class="onb-cmp-no">—</span><span class="onb-cmp-yes">${ic("check")}</span></div><div class="onb-cmp-row"><span>Fine print and terms-change watch</span><span class="onb-cmp-no">—</span><span class="onb-cmp-yes">${ic("check")}</span></div><div class="onb-cmp-row"><span>Cancel and negotiate scripts</span><span class="onb-cmp-no">—</span><span class="onb-cmp-yes">${ic("check")}</span></div><div class="onb-cmp-row"><span>Renewal calendar and smart reminders</span><span class="onb-cmp-no">—</span><span class="onb-cmp-yes">${ic("check")}</span></div><div class="onb-cmp-row"><span>Exports and a yearly report</span><span class="onb-cmp-no">—</span><span class="onb-cmp-yes">${ic("check")}</span></div></div>
+  </section>
+  <section class="onb-sec" data-onb="privacy" aria-label="Privacy">
+    <h2>Your data stays yours</h2>
+    <div class="onb-feats">
+      ${feat("linear-gradient(145deg,#2ED39A,#0b8a5e)","lock","Read-only access","We can never move money. Bank connections can't send a payment.")}
+      ${feat("var(--grad)","shield","Encrypted on your device","Contracts, receipts, and notes stay on the phone, encrypted.")}
+      ${feat("linear-gradient(145deg,#4DA3FF,#3D8BFF)","eye","We don't sell your data","And we don't take a cut of what you save. The savings are yours.")}
+    </div>
+  </section>
+  <section class="onb-end" data-onb="cta" aria-label="Get started">
+    <h2>Start in about 30 seconds</h2>
+    <p>Add things yourself, or connect a bank or card in Canada or the US (optional and read-only) so we can find recurring charges for you.</p>
   </section>
   </div>
   <div class="onb-cta"><button class="btn btn-primary" data-start>Get started</button><p class="small" style="text-align:center;margin:12px 0 0">Takes about 30 seconds · no typing</p></div>`;
@@ -739,7 +921,7 @@ document.addEventListener("click", e => {
   if (d.cday!==undefined){ calDay=calDay===d.cday||d.cday===""?null:d.cday; render(); return; }
   if (d.done){ const a=S.alerts.find(x=>x.id===d.done); if(a) a.unread=false; save(); render(); toast("Marked as done"); return; }
   if (d.del){ S.alerts=S.alerts.filter(x=>x.id!==d.del); save(); render(); toast("Alert deleted"); return; }
-  if (d.fresh!==undefined){ Object.assign(S,{subs:[],contracts:[],stuff:[],alerts:[],savings:[],found:[],imported:true,rewards:emptyRewards()}); save(); location.hash="#/home"; render(); toast("Starting fresh"); return; }
+  if (d.fresh!==undefined){ Object.assign(S,{subs:[],contracts:[],stuff:[],alerts:[],savings:[],found:[],imported:true,rewards:emptyRewards(),bank:emptyBank(),locale:emptyLocale()}); save(); location.hash="#/home"; render(); toast("Starting fresh"); return; }
   if (d.sheet){ window.agreedSheet(d.sheet); return; }
   if (d.period){ S.period=d.period; save(); render(); return; }
   if (d.subf){ subFilter=d.subf; render(); return; }
@@ -748,6 +930,39 @@ document.addEventListener("click", e => {
   if (d.alert){ const a=S.alerts.find(x=>x.id===d.alert); a.unread=false; save(); render(); openItem(a.item); return; }
   if (d.theme){ S.theme=d.theme; save(); applyTheme(); render(); return; }
   if (d.pref){ S.prefs[d.pref]=!S.prefs[d.pref]; save(); t.classList.toggle("on"); return; }
+  if (d.bkprovider!==undefined){ openConnect("provider"); return; }
+  if (d.bkback!==undefined){ openConnect("manage"); return; }
+  if (d.bkcontinue!==undefined){
+    const fromAdd=route()==="add" && !bankConnected();
+    const set=DEMO_ACCOUNTS[(S.locale&&S.locale.country)==="US"?"US":"CA"];
+    const have=new Set(S.bank.accounts.map(a=>a.id));
+    const add=set.filter(a=>!have.has(a.id)).map(a=>({...a}));
+    if(!add.length){ const extra={id:"demo-"+Date.now(),name:"Additional card",mask:"••7740",bg:"#6B7280",mono:"•",kind:"card"}; add.push(extra); }
+    openSheet(scanningSheet("Connecting securely"));
+    setTimeout(()=>{
+      if(!sheetEl().classList.contains("show")) return;
+      S.bank.accounts=S.bank.accounts.concat(add);
+      S.bank.paused=false;
+      save();
+      if(fromAdd && (S.found||[]).length){ sheetEl().innerHTML=`<div class="grab"></div>`+foundSheet(); }
+      else { bankView="manage"; sheetEl().innerHTML=SHEET_CHROME()+connectSheet(); }
+    },900);
+    return;
+  }
+  if (d.bkfeat){
+    S.bank.features[d.bkfeat]=!S.bank.features[d.bkfeat];
+    if(S.bank.features[d.bkfeat]) S.bank.paused=false;
+    save(); refreshConnect(); return;
+  }
+  if (d.bkpause!==undefined){
+    const b=S.bank;
+    if(b.paused){ if(b.featureSnap) Object.assign(b.features,b.featureSnap); b.paused=false; b.featureSnap=null; }
+    else { b.featureSnap={...b.features}; Object.keys(b.features).forEach(k=>b.features[k]=false); b.paused=true; }
+    save(); refreshConnect(); return;
+  }
+  if (d.bkdisc!==undefined){ openConnect("disconnect"); return; }
+  if (d.bkdiscyes!==undefined){ S.bank=emptyBank(); save(); openConnect("manage"); toast("Disconnected. Bank data deleted."); return; }
+  if (d.locale){ S.locale={country:d.locale,currency:d.locale==="US"?"USD":"CAD"}; save(); closeSheet(); render(); toast(localeLabel()); return; }
   if (d.reset!==undefined){ localStorage.removeItem(KEY); location.hash="#/home"; location.reload(); return; }
   if (d.close!==undefined){ closeSheet(); return; }
   if (d.start!==undefined){ S.onboarded=true; save(); const o=$(".onb"); o.style.transition="opacity .4s, transform .4s"; o.style.opacity=0; o.style.transform="scale(1.03)"; setTimeout(()=>o.remove(),400); return; }
@@ -766,7 +981,7 @@ document.addEventListener("click", e => {
   if (d.howcancel){ const s=find(d.howcancel); $("#howto").innerHTML=`<div class="answer"><div class="who">${ic("spark").replace('<svg','<svg style="width:14px;height:14px;color:#A592FF"')}3 steps · about 2 minutes</div>1. Open ${s.name} → Account → Membership.<br>2. Tap “Cancel ${s.trial?"trial":"membership"}” and confirm.<br>3. You keep access until ${fdate(s.due)} — no refund needed.</div>`; return; }
   if (d.hikereview){
     const it=find(d.hikereview), box=$("#hikebox");
-    if(it&&box) box.innerHTML=`<div class="redeemask"><p>You've looked at the ${it.name} price change. Keep the new price, or change your plan. Cancelling still earns cancel points instead.</p><button class="btn btn-primary" data-hikekeep="${it.id}">Keep ${money(it.price)}</button><button class="btn btn-ghost" data-edit="${it.id}">Change my plan</button></div>`;
+    if(it&&box) box.innerHTML=`<div class="redeemask"><p>You've looked at the ${it.name} price change. Keep the new price, or change your plan. Cancelling still adds to your Savings score instead.</p><button class="btn btn-primary" data-hikekeep="${it.id}">Keep ${money(it.price)}</button><button class="btn btn-ghost" data-edit="${it.id}">Change my plan</button></div>`;
     return;
   }
   if (d.hikekeep){ const it=find(d.hikekeep); rHike(it,0); closeSheet(); render(); return; }
@@ -775,15 +990,12 @@ document.addEventListener("click", e => {
     const it=find(d.negoconfirm), raw=$("#nego-amt")&&$("#nego-amt").value, n=Math.round(parseFloat(raw)*100)/100;
     if(!it||!(n>=0)) return;
     const pts=rNegotiate(it,n); it.price=n; save(); closeSheet(); render();
-    toast(pts?`New ${it.name} rate saved · +${pts.toLocaleString("en-CA")} pts`:`Updated ${it.name}`);
+    toast(pts?`New ${it.name} rate saved · +${scoreLabel(pts)} to your score`:`Updated ${it.name}`);
     return;
   }
   if (d.usereturn || d.useclaim){ rWarrantyUse(find(d.usereturn||d.useclaim)); return; }
-  if (d.redeem!==undefined){ redeemAsk=true; refreshRewards(); return; }
-  if (d.redeemno!==undefined){ redeemAsk=false; refreshRewards(); return; }
-  if (d.redeemyes!==undefined){ const ok=rRedeem(); if(ok===true){ redeemAsk=false; refreshRewards(); } else toast(ok); return; }
   if (d.remind){ toast("We'll remind you "+fdate(Math.max(0,find(d.remind).due-3))); return; }
-  if (d.cancel){ const sv=find(d.cancel); const mo=sv?monthly(sv):0; const pts=sv?rCancelPts(sv):0; S.subs=S.subs.filter(s=>s.id!==d.cancel); save(); closeSheet(); render(); toast(`Cancelled · saving ${money(mo)}/mo`+(pts?` · +${pts.toLocaleString("en-CA")} pts`:"")); return; }
+  if (d.cancel){ const sv=find(d.cancel); const mo=sv?monthly(sv):0; const pts=sv?rCancelPts(sv):0; S.subs=S.subs.filter(s=>s.id!==d.cancel); save(); closeSheet(); render(); toast(`Cancelled · saving ${money(mo)}/mo`+(pts?` · +${scoreLabel(pts)} to your score`:"")); return; }
 });
 document.addEventListener("click", e => { if (e.target.classList.contains("scrim")) closeSheet(); });
 /* ---------- gestures ---------- */
