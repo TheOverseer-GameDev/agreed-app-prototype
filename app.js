@@ -699,8 +699,17 @@ function onboarding(){
   const o = document.createElement("div"); o.className="onb";
   const fc = (it,txt,pill,c,top,rot,delay) => `<div class="fcard" style="top:${top}px;rotate:${rot}deg;animation-delay:${delay}s">${mono(it,"sm")}<div class="row-main"><div class="row-title" style="font-size:14px">${it.name}</div><div style="font-size:12px;opacity:.7">${txt}</div></div><span class="pill p-${c}">${pill}</span></div>`;
   o.innerHTML = `<div class="onb-art"><div class="orb"></div><div class="stack">${fc(S.subs[0],"Price up to $18.99","+15%","red",0,-4,.1)}${fc(S.contracts[0],"Promo ends · +$20/mo","60 days","amber",84,3,.25)}${fc(S.stuff[0],"Return window closes","3 days","violet",168,-2,.4)}</div></div>
-  <div><h1>Everything you've <em>agreed</em> to. In one place.</h1><p>Subscriptions, contracts, leases and warranties — found automatically, explained in plain English, and watched for price hikes.</p>
-  <button class="btn btn-primary" data-start>Get started</button><p class="small" style="text-align:center;margin:14px 0 0">Takes about 30 seconds · no typing</p></div>`;
+  <div class="onb-body"><h1>Everything you've <em>agreed</em> to. In one place.</h1><p>Subscriptions, contracts, leases and warranties — found automatically, explained in plain English, and watched for price hikes.</p>
+  <section class="onb-offer" aria-label="Pro and Savings score">
+    <h2>Pay once. Own it. No subscription.</h2>
+    <p>Pro is a one-time purchase. You pay once and keep it — no monthly plan, no renewal surprise.</p>
+    <div class="onb-feats">
+      <div class="onb-feat"><div class="oi" style="background:var(--grad)">${ic("checkc")}</div><div><h3>Pro <span class="pill p-violet">Pay once</span></h3><p>Bank import, alerts, and cancel-or-negotiate help, yours for good. Not a subscription.</p></div></div>
+      <div class="onb-feat"><div class="oi" style="background:linear-gradient(145deg,#2ED39A,#0b8a5e)">${ic("dollar")}</div><div><h3>Savings score <span class="pill p-green">Free</span></h3><p>Always free. A plain-English score of what you've already saved and where you can save more. No paywall.</p></div></div>
+    </div>
+  </section>
+  </div>
+  <div class="onb-cta"><button class="btn btn-primary" data-start>Get started</button><p class="small" style="text-align:center;margin:12px 0 0">Takes about 30 seconds · no typing</p></div>`;
   app.appendChild(o);
 }
 
