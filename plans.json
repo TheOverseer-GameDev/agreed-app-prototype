@@ -1,0 +1,805 @@
+{
+  "updated": "2026-11-13",
+  "currency": "CAD",
+  "note": "On-device plans/prices catalog, rule weights, and savings rules. Prices are only filled when verified (demo household item/contract history, or a cited public source with an as-of date). Leave price blank if unverified \u2014 never invent a figure. A free scheduled GitHub Action can later refresh plans, weights, and rules from public price data \u2014 that Action is not built yet.",
+  "plans": [
+    {
+      "id": "netflix",
+      "name": "Netflix",
+      "cat": "Streaming",
+      "kind": "video",
+      "plans": [
+        {
+          "name": "Standard \u00b7 2 screens",
+          "price": 18.99,
+          "cycle": "mo",
+          "source": "Agreed demo household: amount on the user's item, charge history, or signed contract text. Not a public tariff.",
+          "asOf": "2026-11-13",
+          "currency": "CAD"
+        },
+        {
+          "name": "Previous Standard rate on this account",
+          "price": 16.49,
+          "cycle": "mo",
+          "source": "Agreed demo household: amount on the user's item, charge history, or signed contract text. Not a public tariff.",
+          "asOf": "2026-11-13",
+          "currency": "CAD"
+        }
+      ],
+      "country": "CA",
+      "aliases": [
+        "Netflix.com",
+        "NETFLIX.COM",
+        "Netflix Canada"
+      ]
+    },
+    {
+      "id": "disney",
+      "name": "Disney+",
+      "cat": "Streaming",
+      "kind": "video",
+      "plans": [
+        {
+          "name": "Standard",
+          "price": 11.99,
+          "cycle": "mo",
+          "source": "Agreed demo household: amount on the user's item, charge history, or signed contract text. Not a public tariff.",
+          "asOf": "2026-11-13",
+          "currency": "CAD"
+        }
+      ],
+      "country": "CA",
+      "aliases": [
+        "Disney Plus",
+        "Disney+ Standard"
+      ]
+    },
+    {
+      "id": "crave",
+      "name": "Crave",
+      "cat": "Streaming",
+      "kind": "video",
+      "plans": [
+        {
+          "name": "Premium \u00b7 with ads off",
+          "price": 22.0,
+          "cycle": "mo",
+          "source": "Agreed demo household: amount on the user's item, charge history, or signed contract text. Not a public tariff.",
+          "asOf": "2026-11-13",
+          "currency": "CAD"
+        },
+        {
+          "name": "Previous Premium rate on this account",
+          "price": 19.99,
+          "cycle": "mo",
+          "source": "Agreed demo household: amount on the user's item, charge history, or signed contract text. Not a public tariff.",
+          "asOf": "2026-11-13",
+          "currency": "CAD"
+        }
+      ],
+      "country": "CA",
+      "aliases": [
+        "Crave TV",
+        "Crave Premium"
+      ]
+    },
+    {
+      "id": "youtube",
+      "name": "YouTube Premium",
+      "cat": "Streaming",
+      "kind": "video",
+      "plans": [
+        {
+          "name": "Individual",
+          "price": 13.99,
+          "cycle": "mo",
+          "source": "Agreed demo household: amount on the user's item, charge history, or signed contract text. Not a public tariff.",
+          "asOf": "2026-11-13",
+          "currency": "CAD"
+        },
+        {
+          "name": "Previous Individual rate on this account",
+          "price": 11.99,
+          "cycle": "mo",
+          "source": "Agreed demo household: amount on the user's item, charge history, or signed contract text. Not a public tariff.",
+          "asOf": "2026-11-13",
+          "currency": "CAD"
+        }
+      ],
+      "country": "CA",
+      "aliases": [
+        "YouTube Premium",
+        "Google YouTube Premium"
+      ]
+    },
+    {
+      "id": "spotify",
+      "name": "Spotify",
+      "cat": "Music",
+      "kind": "music",
+      "plans": [
+        {
+          "name": "Premium Individual",
+          "price": 11.99,
+          "cycle": "mo",
+          "source": "Agreed demo household: amount on the user's item, charge history, or signed contract text. Not a public tariff.",
+          "asOf": "2026-11-13",
+          "currency": "CAD"
+        }
+      ],
+      "country": "CA",
+      "aliases": [
+        "Spotify Premium",
+        "SPOTIFY"
+      ]
+    },
+    {
+      "id": "prime",
+      "name": "Amazon Prime",
+      "cat": "Shopping",
+      "kind": "membership",
+      "plans": [
+        {
+          "name": "Annual",
+          "price": 99.0,
+          "cycle": "yr",
+          "source": "Agreed demo household: amount on the user's item, charge history, or signed contract text. Not a public tariff.",
+          "asOf": "2026-11-13",
+          "currency": "CAD"
+        }
+      ],
+      "country": "CA",
+      "aliases": [
+        "Amazon Prime",
+        "Prime Membership",
+        "Amazon.ca Prime"
+      ]
+    },
+    {
+      "id": "icloud",
+      "name": "iCloud+",
+      "cat": "Cloud",
+      "kind": "cloud",
+      "plans": [
+        {
+          "name": "200 GB",
+          "price": 3.99,
+          "cycle": "mo",
+          "source": "Agreed demo household: amount on the user's item, charge history, or signed contract text. Not a public tariff.",
+          "asOf": "2026-11-13",
+          "currency": "CAD"
+        }
+      ],
+      "country": "CA",
+      "aliases": [
+        "iCloud+",
+        "Apple iCloud"
+      ]
+    },
+    {
+      "id": "xbox",
+      "name": "Game Pass Ultimate",
+      "cat": "Gaming",
+      "kind": "gaming",
+      "plans": [
+        {
+          "name": "Xbox",
+          "price": 22.99,
+          "cycle": "mo",
+          "source": "Agreed demo household: amount on the user's item, charge history, or signed contract text. Not a public tariff.",
+          "asOf": "2026-11-13",
+          "currency": "CAD"
+        }
+      ],
+      "country": "CA",
+      "aliases": [
+        "Xbox Game Pass",
+        "Game Pass Ultimate",
+        "Microsoft Xbox"
+      ]
+    },
+    {
+      "id": "uber",
+      "name": "Uber One",
+      "cat": "Food",
+      "kind": "membership",
+      "plans": [
+        {
+          "name": "Monthly",
+          "price": 9.99,
+          "cycle": "mo",
+          "source": "Agreed demo household: amount on the user's item, charge history, or signed contract text. Not a public tariff.",
+          "asOf": "2026-11-13",
+          "currency": "CAD"
+        }
+      ],
+      "country": "CA",
+      "aliases": [
+        "Uber One",
+        "UBER *ONE"
+      ]
+    },
+    {
+      "id": "bell",
+      "name": "Bell Fibe Internet",
+      "cat": "Home",
+      "kind": "internet",
+      "plans": [
+        {
+          "name": "Gigabit 1.5 \u00b7 2-year promo",
+          "price": 95.0,
+          "cycle": "mo",
+          "source": "Agreed demo household: amount on the user's item, charge history, or signed contract text. Not a public tariff.",
+          "asOf": "2026-11-13",
+          "currency": "CAD"
+        },
+        {
+          "name": "Gigabit 1.5 regular after promo",
+          "price": 115.0,
+          "cycle": "mo",
+          "source": "Agreed demo household: amount on the user's item, charge history, or signed contract text. Not a public tariff.",
+          "asOf": "2026-11-13",
+          "currency": "CAD"
+        }
+      ],
+      "country": "CA",
+      "aliases": [
+        "Bell Canada",
+        "Bell Fibe",
+        "BELL FIBE INTERNET",
+        "Bell Internet"
+      ]
+    },
+    {
+      "id": "rogers",
+      "name": "Rogers Infinite",
+      "cat": "Phone",
+      "kind": "phone",
+      "plans": [
+        {
+          "name": "Phone \u00b7 100 GB \u00b7 24-month financing",
+          "price": 85.0,
+          "cycle": "mo",
+          "source": "Agreed demo household: amount on the user's item, charge history, or signed contract text. Not a public tariff.",
+          "asOf": "2026-11-13",
+          "currency": "CAD"
+        }
+      ],
+      "country": "CA",
+      "aliases": [
+        "Rogers Wireless",
+        "Rogers Infinite",
+        "ROGERS"
+      ]
+    },
+    {
+      "id": "goodlife",
+      "name": "GoodLife Fitness",
+      "cat": "Fitness",
+      "kind": "fitness",
+      "plans": [
+        {
+          "name": "Ultimate \u00b7 month-to-month",
+          "price": 64.99,
+          "cycle": "mo",
+          "source": "Agreed demo household: amount on the user's item, charge history, or signed contract text. Not a public tariff.",
+          "asOf": "2026-11-13",
+          "currency": "CAD"
+        }
+      ],
+      "fees": [
+        {
+          "name": "Annual maintenance fee (every July)",
+          "price": 49.0,
+          "cycle": "yr",
+          "source": "Agreed demo household: amount on the user's item, charge history, or signed contract text. Not a public tariff.",
+          "asOf": "2026-11-13",
+          "currency": "CAD"
+        }
+      ],
+      "country": "CA",
+      "aliases": [
+        "GoodLife Fitness",
+        "Good Life Fitness"
+      ]
+    },
+    {
+      "id": "intact",
+      "name": "Intact Auto Insurance",
+      "cat": "Insurance",
+      "kind": "insurance",
+      "plans": [
+        {
+          "name": "Current premium",
+          "price": 168.0,
+          "cycle": "mo",
+          "source": "Agreed demo household: amount on the user's item, charge history, or signed contract text. Not a public tariff.",
+          "asOf": "2026-11-13",
+          "currency": "CAD"
+        },
+        {
+          "name": "Renewal quote on this policy",
+          "price": 181.0,
+          "cycle": "mo",
+          "source": "Agreed demo household: amount on the user's item, charge history, or signed contract text. Not a public tariff.",
+          "asOf": "2026-11-13",
+          "currency": "CAD"
+        }
+      ],
+      "country": "CA",
+      "aliases": [
+        "Intact Insurance",
+        "Intact Auto"
+      ]
+    },
+    {
+      "id": "telus",
+      "name": "Telus",
+      "country": "CA",
+      "cat": "Phone",
+      "kind": "phone",
+      "aliases": [
+        "TELUS",
+        "Telus Mobility"
+      ],
+      "plans": [
+        {
+          "name": "Wireless plan",
+          "price": null,
+          "cycle": "mo",
+          "currency": null,
+          "asOf": null,
+          "source": null,
+          "note": "Price unverified \u2014 left blank."
+        }
+      ]
+    },
+    {
+      "id": "freedom",
+      "name": "Freedom Mobile",
+      "country": "CA",
+      "cat": "Phone",
+      "kind": "phone",
+      "aliases": [
+        "Freedom",
+        "Freedom Mobile"
+      ],
+      "plans": [
+        {
+          "name": "Wireless plan",
+          "price": null,
+          "cycle": "mo",
+          "currency": null,
+          "asOf": null,
+          "source": null,
+          "note": "Price unverified \u2014 left blank."
+        }
+      ]
+    },
+    {
+      "id": "fido",
+      "name": "Fido",
+      "country": "CA",
+      "cat": "Phone",
+      "kind": "phone",
+      "aliases": [
+        "Fido Mobile",
+        "FIDO"
+      ],
+      "plans": [
+        {
+          "name": "Wireless plan",
+          "price": null,
+          "cycle": "mo",
+          "currency": null,
+          "asOf": null,
+          "source": null,
+          "note": "Price unverified \u2014 left blank."
+        }
+      ]
+    },
+    {
+      "id": "koodo",
+      "name": "Koodo",
+      "country": "CA",
+      "cat": "Phone",
+      "kind": "phone",
+      "aliases": [
+        "Koodo Mobile",
+        "KOODO"
+      ],
+      "plans": [
+        {
+          "name": "Wireless plan",
+          "price": null,
+          "cycle": "mo",
+          "currency": null,
+          "asOf": null,
+          "source": null,
+          "note": "Price unverified \u2014 left blank."
+        }
+      ]
+    },
+    {
+      "id": "virgin",
+      "name": "Virgin Plus",
+      "country": "CA",
+      "cat": "Phone",
+      "kind": "phone",
+      "aliases": [
+        "Virgin Mobile",
+        "Virgin Plus",
+        "Virgin Canada"
+      ],
+      "plans": [
+        {
+          "name": "Wireless plan",
+          "price": null,
+          "cycle": "mo",
+          "currency": null,
+          "asOf": null,
+          "source": null,
+          "note": "Price unverified \u2014 left blank."
+        }
+      ]
+    },
+    {
+      "id": "bell-mobile",
+      "name": "Bell Mobile",
+      "country": "CA",
+      "cat": "Phone",
+      "kind": "phone",
+      "aliases": [
+        "Bell Wireless",
+        "Bell Mobility"
+      ],
+      "plans": [
+        {
+          "name": "Wireless plan",
+          "price": null,
+          "cycle": "mo",
+          "currency": null,
+          "asOf": null,
+          "source": null,
+          "note": "Price unverified \u2014 left blank."
+        }
+      ]
+    },
+    {
+      "id": "verizon",
+      "name": "Verizon",
+      "country": "US",
+      "cat": "Phone",
+      "kind": "phone",
+      "aliases": [
+        "Verizon Wireless",
+        "VZW"
+      ],
+      "plans": [
+        {
+          "name": "Wireless plan",
+          "price": null,
+          "cycle": "mo",
+          "currency": null,
+          "asOf": null,
+          "source": null,
+          "note": "Price unverified \u2014 left blank."
+        }
+      ]
+    },
+    {
+      "id": "att",
+      "name": "AT&T",
+      "country": "US",
+      "cat": "Phone",
+      "kind": "phone",
+      "aliases": [
+        "AT&T Wireless",
+        "AT&T Mobility",
+        "ATT"
+      ],
+      "plans": [
+        {
+          "name": "Wireless plan",
+          "price": null,
+          "cycle": "mo",
+          "currency": null,
+          "asOf": null,
+          "source": null,
+          "note": "Price unverified \u2014 left blank."
+        }
+      ]
+    },
+    {
+      "id": "tmobile",
+      "name": "T-Mobile",
+      "country": "US",
+      "cat": "Phone",
+      "kind": "phone",
+      "aliases": [
+        "T-Mobile US",
+        "TMOBILE"
+      ],
+      "plans": [
+        {
+          "name": "Wireless plan",
+          "price": null,
+          "cycle": "mo",
+          "currency": null,
+          "asOf": null,
+          "source": null,
+          "note": "Price unverified \u2014 left blank."
+        }
+      ]
+    },
+    {
+      "id": "appletv",
+      "name": "Apple TV+",
+      "country": "CA",
+      "cat": "Streaming",
+      "kind": "video",
+      "aliases": [
+        "Apple TV Plus"
+      ],
+      "plans": [
+        {
+          "name": "Subscription",
+          "price": null,
+          "cycle": "mo",
+          "currency": null,
+          "asOf": null,
+          "source": null,
+          "note": "Price unverified \u2014 left blank."
+        }
+      ]
+    },
+    {
+      "id": "max",
+      "name": "Max",
+      "country": "CA",
+      "cat": "Streaming",
+      "kind": "video",
+      "aliases": [
+        "HBO Max",
+        "Max streaming"
+      ],
+      "plans": [
+        {
+          "name": "Subscription",
+          "price": null,
+          "cycle": "mo",
+          "currency": null,
+          "asOf": null,
+          "source": null,
+          "note": "Price unverified \u2014 left blank."
+        }
+      ]
+    },
+    {
+      "id": "paramount",
+      "name": "Paramount+",
+      "country": "CA",
+      "cat": "Streaming",
+      "kind": "video",
+      "aliases": [
+        "Paramount Plus"
+      ],
+      "plans": [
+        {
+          "name": "Subscription",
+          "price": null,
+          "cycle": "mo",
+          "currency": null,
+          "asOf": null,
+          "source": null,
+          "note": "Price unverified \u2014 left blank."
+        }
+      ]
+    },
+    {
+      "id": "netflix-us",
+      "name": "Netflix",
+      "country": "US",
+      "cat": "Streaming",
+      "kind": "video",
+      "aliases": [
+        "Netflix.com"
+      ],
+      "plans": [
+        {
+          "name": "Standard",
+          "price": null,
+          "cycle": "mo",
+          "currency": null,
+          "asOf": null,
+          "source": null,
+          "note": "Price unverified \u2014 left blank."
+        }
+      ]
+    },
+    {
+      "id": "disney-us",
+      "name": "Disney+",
+      "country": "US",
+      "cat": "Streaming",
+      "kind": "video",
+      "aliases": [
+        "Disney Plus"
+      ],
+      "plans": [
+        {
+          "name": "Standard",
+          "price": null,
+          "cycle": "mo",
+          "currency": null,
+          "asOf": null,
+          "source": null,
+          "note": "Price unverified \u2014 left blank."
+        }
+      ]
+    },
+    {
+      "id": "spotify-us",
+      "name": "Spotify",
+      "country": "US",
+      "cat": "Streaming",
+      "kind": "music",
+      "aliases": [
+        "Spotify Premium"
+      ],
+      "plans": [
+        {
+          "name": "Premium Individual",
+          "price": null,
+          "cycle": "mo",
+          "currency": null,
+          "asOf": null,
+          "source": null,
+          "note": "Price unverified \u2014 left blank."
+        }
+      ]
+    }
+  ],
+  "weights": {
+    "promo": 1.35,
+    "unused": 1.25,
+    "overlap": 1.18,
+    "insurance": 1.2,
+    "internet": 1.15,
+    "phone": 1.0,
+    "tier": 1.0,
+    "trial-end": 1.12,
+    "fee": 0.95,
+    "annual": 0.7,
+    "bundle": 0.55
+  },
+  "rules": [
+    {
+      "id": "promo-lapse",
+      "kind": "promo",
+      "when": "catalog lists a higher regular or after-promo rate than the user pays now",
+      "action": "negotiate",
+      "actionLabel": "Negotiate script"
+    },
+    {
+      "id": "unused-sub",
+      "kind": "unused",
+      "when": "the item is marked unused",
+      "action": "cancel",
+      "actionLabel": "Cancel script"
+    },
+    {
+      "id": "video-overlap",
+      "kind": "overlap",
+      "when": "the user has three or more video streaming services",
+      "action": "cancel",
+      "actionLabel": "Cancel script"
+    },
+    {
+      "id": "music-overlap",
+      "kind": "overlap",
+      "when": "the user has two or more music services",
+      "action": "cancel",
+      "actionLabel": "Cancel script"
+    },
+    {
+      "id": "cheaper-tier",
+      "kind": "tier",
+      "when": "the catalog has a cheaper official or previous-on-account rate for the same billing cycle",
+      "action": "guide",
+      "actionLabel": "Switch plan guide"
+    },
+    {
+      "id": "annual-vs-monthly",
+      "kind": "annual",
+      "when": "the catalog has both monthly and yearly prices for the same service",
+      "action": "guide",
+      "actionLabel": "Switch plan guide"
+    },
+    {
+      "id": "renewal-increase",
+      "kind": "insurance",
+      "when": "the catalog or contract lists a higher renewal quote than the current premium",
+      "action": "negotiate",
+      "actionLabel": "Negotiate script"
+    },
+    {
+      "id": "known-fee",
+      "kind": "fee",
+      "when": "the catalog lists an extra fee for an item the user has",
+      "action": "negotiate",
+      "actionLabel": "Negotiate script"
+    },
+    {
+      "id": "trial-converting",
+      "kind": "trial-end",
+      "when": "a subscription is still in a free trial",
+      "action": "cancel",
+      "actionLabel": "Cancel script"
+    },
+    {
+      "id": "bundle-prompt",
+      "kind": "bundle",
+      "when": "the user has both an internet and a phone item",
+      "action": "guide",
+      "actionLabel": "Switch plan guide",
+      "estimate": false
+    }
+  ],
+  "currencyNote": "CAD amounts are labeled CAD; US entries are USD when a verified price exists.",
+  "seasons": [
+    {
+      "id": "black-friday",
+      "label": "Black Friday / Cyber Monday",
+      "months": [
+        11
+      ],
+      "days": [
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        1,
+        2
+      ],
+      "note": "Late November is often a good time to ask about a promo or switch plans. We do not list a guaranteed discount.",
+      "kinds": [
+        "video",
+        "music",
+        "phone",
+        "internet",
+        "gaming"
+      ]
+    },
+    {
+      "id": "back-to-school",
+      "label": "Back to school",
+      "months": [
+        8,
+        9
+      ],
+      "note": "Late summer is a common promo window for mobile and internet. Confirm any offer with the provider.",
+      "kinds": [
+        "phone",
+        "internet"
+      ]
+    },
+    {
+      "id": "renewal-window",
+      "label": "Before a renewal",
+      "note": "The weeks before a contract or insurance renewal are usually the best time to switch or negotiate.",
+      "kinds": [
+        "insurance",
+        "internet",
+        "phone"
+      ]
+    }
+  ]
+}
